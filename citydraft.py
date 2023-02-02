@@ -63,7 +63,7 @@ def main():
     global composer
     post_process()
     
-    global objects, control_points, transform_control, spheres, Boundary_status, Mouse1Bool, controls,Close_Bool, preview_Sphere, spheres_road,all_spheres,all_curve_object_road,Saved,Hover_over_Save,object_clicked, output_lists,clicked_sphere, geometry, Input_Road_Coords_py,Boundary_Coords_py, curve_material
+    global objects, control_points, transform_control, spheres, Boundary_status, Mouse1Bool, controls,Close_Bool, preview_Sphere, spheres_road,all_spheres,all_curve_object_road,Saved,Hover_over_Save,object_clicked, output_lists,clicked_sphere, geometrie, Input_Road_Coords_py,Boundary_Coords_py, curve_material
     global sphere_geom, sphere_material,preview_Sphere,prev_sphere_geom, Reset_Mesh, Save_Mesh, raycaster, mouse, plane_Raycaster, plane_map,texture_Plane_Mesh_Mat,OUTPUT_Mainstreet
     OUTPUT_Mainstreet =[]
     Input_Road_Coords_py=[]
@@ -123,12 +123,12 @@ def main():
 
     mouse = THREE.Vector2.new()
 
-    geometry = THREE.PlaneGeometry.new( 500, 500 )
-    geometry.rotateX( - Math.PI / 2 )
+    geometrie = THREE.PlaneGeometry.new( 500, 500 )
+    geometrie.rotateX( - Math.PI / 2 )
 
      
-    plane_Raycaster = THREE.Mesh.new( geometry, THREE.MeshPhongMaterial.new())
-    geometry.rotateX(math.radians(90))
+    plane_Raycaster = THREE.Mesh.new( geometrie, THREE.MeshPhongMaterial.new())
+    geometrie.rotateX(math.radians(90))
     plane_Raycaster.visible = False
     plane_Raycaster.material.transparent=True
     plane_Raycaster.material.opacity = 0.5
@@ -140,7 +140,7 @@ def main():
     Plane_Mesh_Mat.color = color_plane_map
     #texture_Plane_Mesh_Mat = THREE.TextureLoader.new().load("./maps\Berlin.png")
     #Plane_Mesh_Mat.map = texture_Plane_Mesh_Mat
-    plane_map = THREE.Mesh.new( geometry,Plane_Mesh_Mat)
+    plane_map = THREE.Mesh.new( geometrie,Plane_Mesh_Mat)
     
     plane_map.translateZ(-3)
     scene.add( plane_map )
@@ -304,7 +304,7 @@ def Generate():
             count_Mainstreet += 1
 ####Generate Substreet
     if input_param.SecondaryStreets == True or count_Substreet < 1 and input_param.GenerateCity == True or count_Substreet < 1 and input_param.SecondaryStreets == True or count_Substreet < 1 and input_param.AssignUsage == True:
-            ##generateSubhtreets
+            SubStreetGeneratorAndDrawing()
             count_Substreet += 1
 ####Assign Usage
     if input_param.AssignUsage == True or count_Usage < 1 and input_param.GenerateCity == True:
@@ -333,6 +333,7 @@ def regenerateAll():
     scene.add(preview_Sphere)
     scene.add( plane_map )
     mainStreetGeneratorAndDrawing()
+    SubStreetGeneratorAndDrawing()
     generatePlotsAndAssign()
     global meshesfinal_listL, linesfinal_listL
     generateL ()
@@ -370,98 +371,165 @@ def regenerateAll():
     
     scene.add(plane) 
 
-def mainStreetGeneratorAndDrawing():
-    global Boundary_Coords_py,Input_Road_Coords_py, OUTPUT_Mainstreet
-    BaseShapePoints=Boundary_Coords_py
-    BaseShapeLines = []
-    for i in range(len(BaseShapePoints)):
-        if i < len(BaseShapePoints)-1:
-            CurrentLine = [BaseShapePoints[i], BaseShapePoints[i+1]]
-            print("CURRENT", CurrentLine)
-            BaseShapeLines.append(CurrentLine)
-        else:
-            CurrentLine = [BaseShapePoints[i], BaseShapePoints[i-(len(BaseShapePoints)-1)]]
-            BaseShapeLines.append(CurrentLine)
+# def mainStreetGeneratorAndDrawing():
+#     global Boundary_Coords_py,Input_Road_Coords_py, OUTPUT_Mainstreet
+#     BaseShapePoints=Boundary_Coords_py
+#     BaseShapeLines = []
+#     for i in range(len(BaseShapePoints)):
+#         if i < len(BaseShapePoints)-1:
+#             CurrentLine = [BaseShapePoints[i], BaseShapePoints[i+1]]
+#             print("CURRENT", CurrentLine)
+#             BaseShapeLines.append(CurrentLine)
+#         else:
+#             CurrentLine = [BaseShapePoints[i], BaseShapePoints[i-(len(BaseShapePoints)-1)]]
+#             BaseShapeLines.append(CurrentLine)
     
-    InputLines=Input_Road_Coords_py
-    mainStreetNetwork = mainStreetGenerator(BaseShapeLines,InputLines)
+#     InputLines=Input_Road_Coords_py.copy()
+#     InputLines=random.shuffle(InputLines)
+#     mainStreetNetwork = mainStreetGenerator(BaseShapeLines,InputLines)
 
-    for i in BaseShapeLines:                            #Append BaseShapeLines to list of generated Streets
-        mainStreetNetwork.append(i)
+#     for i in BaseShapeLines:                            #Append BaseShapeLines to list of generated Streets
+#         mainStreetNetwork.append(i)
     
-    splitMainStreetNetwork = splitMultipleLines(mainStreetNetwork)   #Split List of Streets and Baseshape into lines useable by loopfinder
+#     splitMainStreetNetwork = splitMultipleLines(mainStreetNetwork)   #Split List of Streets and Baseshape into lines useable by loopfinder
 
-    splitMainStreetNetworkAsList = []
-    splitMainStreetNetworkAsListRounded = []
-    for i in splitMainStreetNetwork:
-        tempList = [i[0].tolist(),i[1].tolist()]
-        splitMainStreetNetworkAsList.append(tempList)
-    tempList = []
+#     splitMainStreetNetworkAsList = []
+#     splitMainStreetNetworkAsListRounded = []
+#     for i in splitMainStreetNetwork:
+#         tempList = [i[0].tolist(),i[1].tolist()]
+#         splitMainStreetNetworkAsList.append(tempList)
+#     tempList = []
 
-    for i in splitMainStreetNetworkAsList:  #Round all Points in Line-Network to 8 digits after comma so small rounding errors of the linesplitter get mitigated
-        for j in i:
-            temptemplist = [round(j[0],8),round(j[1],8)]
-            tempList.append(temptemplist)
-        splitMainStreetNetworkAsListRounded.append(tempList)
-        tempList = []
+#     for i in splitMainStreetNetworkAsList:  #Round all Points in Line-Network to 8 digits after comma so small rounding errors of the linesplitter get mitigated
+#         for j in i:
+#             temptemplist = [round(j[0],8),round(j[1],8)]
+#             tempList.append(temptemplist)
+#         splitMainStreetNetworkAsListRounded.append(tempList)
+#         tempList = []
     
+#     print
+#     subPlots = loop_finder(splitMainStreetNetworkAsListRounded)
+#       #Find the Loops (Plots) out of the generated street-network
+#     #print("PLOTS!",subPlots)
+#     OUTPUT_Mainstreet = subPlots
+#     #Transferring NumPy-Lines into Three.js for visualization
+#     ThreeCurrentLine = []
+#     ThreeLinesStreet = []
+#     ThreeLinesBaseShape = []
+#     ThreeLinesInput = []
     
-    subPlots = loop_finder(splitMainStreetNetworkAsListRounded)    #Find the Loops (Plots) out of the generated street-network
-    #print("PLOTS!",subPlots)
-    OUTPUT_Mainstreet = subPlots
+#     #BaseShape
+#     for i in BaseShapeLines:
+#         for j in i:
+#             TempArrayToList = j.tolist()
+#             ThreeVec1 = THREE.Vector2.new(TempArrayToList[0],TempArrayToList[1])
+#             ThreeCurrentLine.append(ThreeVec1)
+#         ThreeLinesBaseShape.append (ThreeCurrentLine)
+#         ThreeCurrentLine = []
 
-    #Transferring NumPy-Lines into Three.js for visualization
-    ThreeCurrentLine = []
-    ThreeLinesStreet = []
-    ThreeLinesBaseShape = []
-    ThreeLinesInput = []
-    
-    #BaseShape
-    for i in BaseShapeLines:
-        for j in i:
-            TempArrayToList = j.tolist()
-            ThreeVec1 = THREE.Vector2.new(TempArrayToList[0],TempArrayToList[1])
-            ThreeCurrentLine.append(ThreeVec1)
-        ThreeLinesBaseShape.append (ThreeCurrentLine)
-        ThreeCurrentLine = []
+#     #InputLines
+#     for i in InputLines:
+#         for j in i:
+#             TempArrayToList = j.tolist()
+#             ThreeVec1 = THREE.Vector2.new(TempArrayToList[0],TempArrayToList[1])
+#             ThreeCurrentLine.append(ThreeVec1)
+#         ThreeLinesInput.append (ThreeCurrentLine)
+#         ThreeCurrentLine = []
 
-    #InputLines
-    for i in InputLines:
-        for j in i:
-            TempArrayToList = j.tolist()
-            ThreeVec1 = THREE.Vector2.new(TempArrayToList[0],TempArrayToList[1])
-            ThreeCurrentLine.append(ThreeVec1)
-        ThreeLinesInput.append (ThreeCurrentLine)
-        ThreeCurrentLine = []
-
-    #GeneratedStreets
-    for i in splitMainStreetNetwork:
-        for j in i:
-            TempArrayToList = j.tolist()
-            ThreeVec1 = THREE.Vector2.new(TempArrayToList[0],TempArrayToList[1])
-            ThreeCurrentLine.append(ThreeVec1)
-        ThreeLinesStreet.append (ThreeCurrentLine)
-        ThreeCurrentLine = []
+#     #GeneratedStreets
+#     for i in splitMainStreetNetwork:
+#         for j in i:
+#             TempArrayToList = j.tolist()
+#             ThreeVec1 = THREE.Vector2.new(TempArrayToList[0],TempArrayToList[1])
+#             ThreeCurrentLine.append(ThreeVec1)
+#         ThreeLinesStreet.append (ThreeCurrentLine)
+#         ThreeCurrentLine = []
     
 
-    draw_system_streets(ThreeLinesStreet)
-    draw_system_baseshape(ThreeLinesBaseShape)
-    draw_system_input(ThreeLinesInput)
+#     draw_system_streets(ThreeLinesStreet)
+#     draw_system_baseshape(ThreeLinesBaseShape)
+#     draw_system_input(ThreeLinesInput)
 
 def SubStreetGeneratorAndDrawing():
-    pass
+    global OUTPUT_Mainstreet,dividedPlotsAsListRounded,dividedplotsaslines
+    print("OUTPUT_Mainstreet",OUTPUT_Mainstreet)
+    subPlotsAsNP = []
+    for i in OUTPUT_Mainstreet:
+        tempSubPlot = []
+        for j in i:
+            tempSubPlot.append(np.array([j[0],j[1]]))
+        subPlotsAsNP.append(tempSubPlot)
+    
+    dividedplots = []
+    for i in subPlotsAsNP:
+        currentdividedplots = polygonDivider(i,0,1000,1,True,i)
+        for t in currentdividedplots:
+            dividedplots.append(t)
+    
+    dividedPlotsAsList = []
+    dividedPlotsAsListRounded = []
+    for i in dividedplots:
+        tempList = []
+        for j in i:
+            tempList.append(j.tolist())
+        dividedPlotsAsList.append(tempList)
+        tempList = []
+    
+    for i in dividedplots:
+        tempList = []
+        for j in i:
+            tempList.append([round(j[0],3),round(j[1],3)])
+        dividedPlotsAsListRounded.append(tempList)
+        tempList = []
+
+        #----> Hier dividedPlotsAsListRounded zur verwendung in Neighborfinder, usage-assignment etc.!
+    print("dividedPlotsAsListRounded",dividedPlotsAsListRounded)
+    dividedplotsaslines = []
+    
+    for x in dividedPlotsAsListRounded:
+        tempplotasline = []
+        for i in range(len(x)):
+            if i < len(x)-1:
+                CurrentLine = [x[i], x[i+1]]
+                tempplotasline.append(CurrentLine)
+            else:
+                CurrentLine = [x[i], x[i-(len(x)-1)]]
+                tempplotasline.append(CurrentLine)
+        dividedplotsaslines.append(tempplotasline)
+    ThreeLinesSubroads =[]
+    print("DIVIDEDPLOTSASLIST",dividedPlotsAsListRounded)
+    
+    ThreeCurrentLine = []
+
+    for x in dividedplotsaslines:
+        singlePlot = []
+        for i in x:
+            for j in i:
+                #TempArrayToList = j.tolist()
+                ThreeVec1 = THREE.Vector2.new(j[0],j[1])
+                ThreeCurrentLine.append(ThreeVec1)
+            singlePlot.append(ThreeCurrentLine)
+            ThreeCurrentLine = []
+        ThreeLinesSubroads.append (singlePlot)
+        singlePlot = []
+    draw_system_substreets(ThreeLinesSubroads)
     
 
 def generatePlotsAndAssign():
-    global INPUT_LINES, PLOTS, toplots, NEIGHBOURS
-    INPUT_LINES = [[(int(point[0]), int(point[1])) for point in line] for line in lines]
+    global INPUT_LINES, PLOTS, toplots, NEIGHBOURS,dividedPlotsAsListRounded,dividedplotsaslines
+    #INPUT_LINES = [[(int(point[0]), int(point[1])) for point in line] for line in dividedPlotsAsListRounded]
     ##########################################################################################
-    PLOTS= loop_finder(INPUT_LINES)
-    #print("Plots:",PLOTS)
+    
+
+
+    dividedPlotsAsListRounded
+    
+    PLOTS= loop_finder(dividedplotsaslines)
+    print("Plots:",PLOTS)
     ##########################################################################################
     toplots = [[tuple(x) for x in sublist] for sublist in PLOTS]#Convert in Tuples
     NEIGHBOURS = find_overlapping_plots(toplots)
-    #print("Neighbours:",NEIGHBOURS)
+    print("Neighbours:",NEIGHBOURS)
     ##########################################################################################
     global DICTIONARY, POSSIBLE_CHANGES
     DICTIONARY = convert_data(NEIGHBOURS)
@@ -472,24 +540,24 @@ def generatePlotsAndAssign():
     print ("Distribution",DISTRIBUTION)
 
 def Map1():
-    global plane_map, geometry,texture_Plane_Mesh_Mat 
+    global plane_map, geometrie,texture_Plane_Mesh_Mat 
     
     scene.remove(plane_map) 
     Plane_Mesh_Mat = THREE.MeshPhongMaterial.new()
     texture_Plane_Mesh_Mat = THREE.TextureLoader.new().load("./maps\StuttgartBerg.png")
     Plane_Mesh_Mat.map = texture_Plane_Mesh_Mat
-    plane_map = THREE.Mesh.new( geometry,Plane_Mesh_Mat)
+    plane_map = THREE.Mesh.new( geometrie,Plane_Mesh_Mat)
     plane_map.translateZ(-3)
     scene.add( plane_map )
 
 def Map2():
-    global plane_map, geometry,texture_Plane_Mesh_Mat 
+    global plane_map, geometrie,texture_Plane_Mesh_Mat 
     
     scene.remove(plane_map) 
     Plane_Mesh_Mat = THREE.MeshPhongMaterial.new()
     texture_Plane_Mesh_Mat = THREE.TextureLoader.new().load("./maps\Berlin.png")
     Plane_Mesh_Mat.map = texture_Plane_Mesh_Mat
-    plane_map = THREE.Mesh.new( geometry,Plane_Mesh_Mat)
+    plane_map = THREE.Mesh.new( geometrie,Plane_Mesh_Mat)
     plane_map.translateZ(-3)
     scene.add( plane_map )
     
@@ -500,7 +568,7 @@ def Map3():
     Plane_Mesh_Mat = THREE.MeshPhongMaterial.new()
     texture_Plane_Mesh_Mat = THREE.TextureLoader.new().load("./maps\Frankfurt.png")
     Plane_Mesh_Mat.map = texture_Plane_Mesh_Mat
-    plane_map = THREE.Mesh.new( geometry,Plane_Mesh_Mat)
+    plane_map = THREE.Mesh.new( geometrie,Plane_Mesh_Mat)
     plane_map.translateZ(-3)
     scene.add( plane_map )
 
@@ -511,7 +579,7 @@ def NoMap():
     color_plane_map = THREE.Color.new ("rgb(200, 200, 200)")
     Plane_Mesh_Mat = THREE.MeshPhongMaterial.new( )
     Plane_Mesh_Mat.color = color_plane_map
-    plane_map = THREE.Mesh.new( geometry,Plane_Mesh_Mat)
+    plane_map = THREE.Mesh.new( geometrie,Plane_Mesh_Mat)
     plane_map.translateZ(-3)
     scene.add(plane_map)
     
@@ -561,8 +629,10 @@ class plotInformation:
         self.areatype = typus 
         
         if typus == 1:
+            self.currentArea,  self.newouterboundary, self.offsetvalue  = calc_R(self.outerboundary)
             self.currentArea =  self.plotarea
         elif typus == 2: 
+            self.currentArea,  self.newouterboundary, self.offsetvalue  = calc_R(self.outerboundary)
             self.currentArea = self.plotarea *2
         elif typus == 3: 
             self.currentArea,  self.newouterboundary, self.offsetvalue  = calc_B(self.outerboundary)
@@ -577,12 +647,16 @@ class plotInformation:
             self.currentArea,  self.newouterboundary, self.offsetvalue  = calc_B(self.outerboundary)
             self.currentArea = self.currentArea *6
         elif typus == 7: 
+            self.currentArea,  self.newouterboundary, self.offsetvalue  = calc_H(self.outerboundary)
             self.currentArea = self.plotarea *7
         elif typus == 8: 
+            self.currentArea,  self.newouterboundary, self.offsetvalue  = calc_H(self.outerboundary)
             self.currentArea = self.plotarea *8
         elif typus == 9: 
+            self.currentArea,  self.newouterboundary, self.offsetvalue  = calc_H(self.outerboundary)
             self.currentArea = self.plotarea *9
         elif typus == 10: 
+            self.currentArea,  self.newouterboundary, self.offsetvalue  = calc_H(self.outerboundary)
             self.currentArea = self.plotarea *10
 
     
@@ -877,7 +951,7 @@ def calc_B (arraypoints):
         boundarylengths = lengthBoundary(Offset2X, Offset2Y)
         #print("boundarylengths", min(boundarylengths))
         #print (Offset2X)
-        Points_2_check = convert_into_Points(OffsetX, OffsetY)
+        Points_2_check = convert_into_Points(Offset2X, Offset2Y)
     
         if min(Offset2X) == min(OffsetX) or determine_loop_direction(Points_2_check) == "Counterclockwise":
             # print(determine_loop_direction(Points_2_check))
@@ -899,25 +973,155 @@ def calc_B (arraypoints):
 
 def calc_R(arraypoints):
     
-    # subdivide lars 
-    #loop finder Robert 
-    # offsettten 
-    #fläche berechnen für jeden 
-    #flächen addieren 
+    Xcoordinatesb, Ycoordinatesb = generatexy (arraypoints)
+    Xcoordinates5, Ycoordinates5 = makeOffsetPoly(Xcoordinatesb,Ycoordinatesb, 5)
     
-    #fläche check P 
-    arraypoints 
+    newOuterboundary = convert_result_check_W(Xcoordinates5, Ycoordinates5)
+    print("vorher")
+    dividedPoly = polygonDivider(newOuterboundary,200, 25000, 1, True,newOuterboundary)
+    print("nachher")
+    
+    OffsetListdividedPoly = []
+    areaPlotfinal = []
+    
+    finalArea = 0
+    for i in dividedPoly:
+        
+        offsetvalue = 0
+        areaPlotvalidR = Area(i)
+        Xcoordinatesb, Ycoordinatesb = generatexy (i)
+        #check distance of intersectes points and offsets plot if possible
+        boundarylengths = lengthBoundary(Xcoordinatesb, Ycoordinatesb)
+
+        while min(boundarylengths) > 15:  
+            
+            Oldoffset = offsetvalue
+                
+            offsetvalue += 1
+            
+            OffsetX, OffsetY = makeOffsetPoly(Xcoordinatesb,Ycoordinatesb,offsetvalue)
+            boundarylengths = lengthBoundary(OffsetX, OffsetY)
+            #print("boundarylengths", min(boundarylengths))
+            
+            Points_2_check = convert_into_Points(OffsetX, OffsetY)
+            
+            if min(OffsetX) == min(Xcoordinatesb) or determine_loop_direction(Points_2_check) == "Counterclockwise":
+                
+                OffsetX, OffsetY = makeOffsetPoly(Xcoordinatesb, Ycoordinatesb, Oldoffset)
+                convertInnerBoundary = convert_result_check_W( OffsetX, OffsetY)
+                areaPlotvalidR = Area(convertInnerBoundary)
+                print("Oldoffset", Oldoffset)
+                offsetvalue = Oldoffset
+                break 
+        #print("offsetvalue", offsetvalue)
+
+            else: 
+                convertInnerBoundary = convert_result_check_W(OffsetX, OffsetY)
+                areaPlotvalidR = Area(convertInnerBoundary)
+
+        areaPlotfinal.append(areaPlotvalidR)
+        OffsetListdividedPoly.append(offsetvalue)
+
+    areaR = 0
+    for area in areaPlotfinal:
+        areaR += area
+    
+    print("areaR", areaR)
+    return areaR, dividedPoly, OffsetListdividedPoly
 
 def calc_H(arraypoints):
-    arraypoints 
-    # subdivide lars 
-    #loop finder Robert 
-    # offsettten 
-    #fläche berechnen für jeden 
-    #flächen addieren
     
-    #fläche check P 
-    arraypoints 
+    Xcoordinatesb, Ycoordinatesb = generatexy (arraypoints)
+    Xcoordinates5, Ycoordinates5 = makeOffsetPoly(Xcoordinatesb,Ycoordinatesb, 5)
+    
+    newOuterboundary = convert_result_check_W(Xcoordinates5, Ycoordinates5)
+    print("vorher")
+    dividedPoly = polygonDivider(newOuterboundary,200, 25000, 1, True,newOuterboundary)
+    print("nachher")
+    
+    OffsetListdividedPoly = []
+    areaPlotfinal = []
+    
+    finalArea = 0
+    for i in dividedPoly:
+        
+        offsetvalue = 0
+        areaPlotvalidR = Area(i)
+        Xcoordinatesb, Ycoordinatesb = generatexy (i)
+        #check distance of intersectes points and offsets plot if possible
+        boundarylengths = lengthBoundary(Xcoordinatesb, Ycoordinatesb)
+
+        while min(boundarylengths) > 25:  
+            
+            Oldoffset = offsetvalue
+                
+            offsetvalue += 1
+            
+            OffsetX, OffsetY = makeOffsetPoly(Xcoordinatesb,Ycoordinatesb,offsetvalue)
+            boundarylengths = lengthBoundary(OffsetX, OffsetY)
+            #print("boundarylengths", min(boundarylengths))
+            
+            Points_2_check = convert_into_Points(OffsetX, OffsetY)
+            
+            if min(OffsetX) == min(Xcoordinatesb) or determine_loop_direction(Points_2_check) == "Counterclockwise":
+                
+                OffsetX, OffsetY = makeOffsetPoly(Xcoordinatesb, Ycoordinatesb, Oldoffset)
+                convertInnerBoundary = convert_result_check_W( OffsetX, OffsetY)
+                areaPlotvalidR = Area(convertInnerBoundary)
+                print("Oldoffset", Oldoffset)
+                offsetvalue = Oldoffset
+                break 
+        #print("offsetvalue", offsetvalue)
+
+            else: 
+                convertInnerBoundary = convert_result_check_W(OffsetX, OffsetY)
+                areaPlotvalidR = Area(convertInnerBoundary)
+
+        areaPlotfinal.append(areaPlotvalidR)
+        OffsetListdividedPoly.append(offsetvalue)
+
+    areaR = 0
+    for area in areaPlotfinal:
+        areaR += area
+    
+    print("areaR", areaR)
+    return areaR, dividedPoly, OffsetListdividedPoly
+    
+def calculateFloors (area_all, dict_sorted, max_floors,population):
+    
+    population_possibleB = area_all//30 
+    if population_possibleB >= population:
+        #Blockpermiterdevelopment
+        number_of_floors = 1 
+        for i in dict_sorted.keys():
+            dict_sorted[i]['Plotobject'].set_floors(number_of_floors)
+            
+    
+    else: 
+        area_all = 0 
+        for i in dict_sorted.keys():
+
+            countFloors = 0
+            one_floor = dict_sorted[i]['Plotobject'].get_area()
+            # print ("one_floor", one_floor, i)
+            
+            population_possibleB = area_all//30 
+            
+            while population_possibleB < population and countFloors < max_floors:
+                
+                area_all += one_floor
+                countFloors += 1
+
+                population_possibleB = area_all//30 
+                # print ("pop_possible", population_possibleB, countFloors)
+            
+            dict_sorted[i]['Plotobject'].set_floors(countFloors)
+              
+   
+            if population_possibleB > population:
+                break 
+    
+    return dict_sorted   
 
 def calc(arraypoints, floors, heightperfloor):
     
@@ -986,30 +1190,50 @@ def G(arraypoints, colorp):
     
     return pleneGGG
 
-# def B(arraypoints):
-#     arraylines = generateLinesNum(arraypoints)
-#     Plotboundary = numLinesToVec(arraylines)
-#     draw_system(Plotboundary)
     
-def R(arraypoints, offsetvalue, floors, heightperfloor):
+def R(arraypoints, floors, heightperfloor):
     
-    Xcoordinates, Ycoordinates = offsetallplots5(arraypoints)
-    #generate Baseshape of x and y coordinates
+    meshesRfinal = []
+    linesRfinal = []
+    planeRfinal = []
     
-    xCoordB, yCoordB = makeFloatfromPoint( Xcoordinates, Ycoordinates)
-    OffsetX, OffsetY = makeOffsetPoly(Xcoordinates,Ycoordinates, offsetvalue)
 
-    #convert x and y lists 
-    xCoordAr, yCoordAr = makeFloatfromPoint(OffsetX, OffsetY)
+    area, dividedboundary, dividedoffset = calc_R(arraypoints)
+
+    length = len(dividedboundary)
+    
+    for i in range(0, length):
+        print("i", i)
+        xCoordB, yCoordB = generatexy (dividedboundary[i])
+        xCoordout,ycoordout = makeFloatfromPoint(xCoordB, yCoordB) 
+        
+        xCoordsf, yCoordsf = makeOffsetPoly(xCoordB,yCoordB, dividedoffset[i])
+        xCoordAr,yCoordAr = makeFloatfromPoint(xCoordsf, yCoordsf) 
     
     #generate list of lines
-    IntersectionLines = ListPoint2Lines(OffsetX, OffsetY)
-     #Transferring NumPy-Lines into Three.js for visualization    
-    IntersectionLines = numLinesToVec(IntersectionLines)
-    draw_system(IntersectionLines)
+        IntersectionLines = ListPoint2Lines(xCoordsf, yCoordsf)
+        IntersectionLines = numLinesToVec(IntersectionLines)
+        #draw_system(IntersectionLines)
 
-    plane(xCoordB, yCoordB,THREE.Color.new("rgb(0,0,0)"))
-    generateShape(xCoordAr,yCoordAr,THREE.Color.new("rgb(100,100,100)"), THREE.Color.new("rgb(80,80,80)"),floors, heightperfloor)
+        planeR = plane(xCoordout,ycoordout,THREE.Color.new("rgb(174,155,148)"))
+        
+        
+        meshesR, linesR = generateShape(xCoordAr,yCoordAr,THREE.Color.new("rgb(219,208,205)"), THREE.Color.new("rgb(174,155,148)"),floors, heightperfloor)
+        
+        for j in range(len(meshesR)):
+            meshesRfinal.append(meshesR[j])
+        
+        for k in range(len(linesR)):
+            linesRfinal.append(linesR[k])
+            
+        
+        planeRfinal.append(planeR)
+        
+    print("linesR", linesR)
+   
+    print ("meshesR", meshesR)
+    return meshesRfinal, linesRfinal, planeRfinal
+
 
 def B(arraypoints, colorm, colorl, colorp, floors, heightperfloor):
 
@@ -1036,38 +1260,67 @@ def B(arraypoints, colorm, colorl, colorp, floors, heightperfloor):
    
     return meshes_listB, lines_listB, plane1
 
-def H(arraypoints, offsetvalue, floors, heightperfloor):
-    Xcoordinates, Ycoordinates = offsetallplots5(arraypoints)
+def H(arraypoints, floors, heightperfloor):
     
-    xCoordB, yCoordB = makeFloatfromPoint( Xcoordinates, Ycoordinates)
-    OffsetX, OffsetY = makeOffsetPoly(Xcoordinates,Ycoordinates, offsetvalue)
-
-    #convert x and y lists 
-    xCoordAr, yCoordAr = makeFloatfromPoint(OffsetX, OffsetY)
+    meshesRfinal = []
+    linesRfinal = []
+    planeRfinal = []
+    
+    
+    area, dividedboundary, dividedoffset = calc_H(arraypoints)
+    print("dividedboundary", dividedboundary)
+    print("dividedoffset", dividedoffset)
+    
+    
+    print("len(dividedboundary)", len(dividedboundary))
+    length = len(dividedboundary)
+    
+    for i in range(0, length):
+        print("i", i)
+        xCoordB, yCoordB = generatexy (dividedboundary[i])
+        xCoordout,ycoordout = makeFloatfromPoint(xCoordB, yCoordB) 
+       
+        xCoordsf, yCoordsf = makeOffsetPoly(xCoordB,yCoordB, dividedoffset[i])
+        xCoordAr,yCoordAr = makeFloatfromPoint(xCoordsf, yCoordsf) 
     
     #generate list of lines
-    IntersectionLines = ListPoint2Lines(OffsetX, OffsetY)
-    
-    IntersectionLines = numLinesToVec(IntersectionLines)
-    # draw_system(IntersectionLines)
+        IntersectionLines = ListPoint2Lines(xCoordsf, yCoordsf)
+        IntersectionLines = numLinesToVec(IntersectionLines)
+        # draw_system(IntersectionLines)
 
-    plane1 = plane(xCoordB, yCoordB,THREE.Color.new("rgb(174,155,148)"))
+        planeR = plane(xCoordout,ycoordout,THREE.Color.new("rgb(174,155,148)"))
+        print("planeRfinal", planeRfinal)
+        print("planeR", planeR)
+        
+        meshesR, linesR = generateShape(xCoordAr,yCoordAr,THREE.Color.new("rgb(219,208,205)"), THREE.Color.new("rgb(174,155,148)"),4, heightperfloor)
+        
+        for j in range(len(meshesR)):
+            meshesRfinal.append(meshesR[j])
+        
+        for k in range(len(linesR)):
+            linesRfinal.append(linesR[k])
+            
+        
+        planeRfinal.append(planeR)
+        
+        print("linesR", linesR)
     
-    linesAll = []
-    meshesAll = []
-    meshesI, linesI = generateShape(xCoordAr,yCoordAr,THREE.Color.new("rgb(219,208,205)"), THREE.Color.new("rgb(174,155,148)"), floors, heightperfloor)
-    
-    # meshesAll.append(meshesI)
-    # linesAll.append(linesI)
-    
-    # Offset2X, Offset2Y = makeOffsetPoly(OffsetX, OffsetY , 3)
-    # xCoordAr2, yCoordAr2 = makeFloatfromPoint(Offset2X, Offset2Y)
+        print ("meshesR", meshesR)
+        
 
-    # meshesTop, linesTop = generateShapeTop(xCoordAr2, yCoordAr2,THREE.Color.new("rgb(219,208,205)"), THREE.Color.new("rgb(174,155,148)"),floors-4, heightperfloor)
-    # mesehsAll.append(meshesTop)
-    # linesAll.append(linesTop)
     
-    return meshesI, linesI, plane1
+        Offset2X, Offset2Y = makeOffsetPoly(xCoordsf, yCoordsf , 3)
+        xCoordAr2, yCoordAr2 = makeFloatfromPoint(Offset2X, Offset2Y)
+
+        meshesTop, linesTop = generateShapeTop(xCoordAr2, yCoordAr2,THREE.Color.new("rgb(219,208,205)"), THREE.Color.new("rgb(174,155,148)"),floors-4, heightperfloor)
+        for j in range(len(meshesTop)):
+            meshesRfinal.append(meshesTop[j])
+        
+        for k in range(len(linesTop)):
+            linesRfinal.append(linesTop[k])
+    
+    return meshesRfinal, linesRfinal, planeRfinal
+
 
 def E(arraypoints, colorp, colorm, colorl, floors, heightperfloor):
 
@@ -1114,10 +1367,11 @@ def generateTypeL (dict_sorted, offsetR, offsetH, heightperfloorR, heightperfloo
                 greenP = G(dict_sorted[i]['Plotobject'].get_outerboundary(), THREE.Color.new("rgb(194,204,185)"))
             
             if dict_sorted[i]['Plotobject']. get_area_type() == 1:
-                R(dict_sorted[i]['Plotobject'].get_outerboundary(), offsetR, 1, heightperfloorR)
+                
+                meshes_list, lines_list, ground = R(dict_sorted[i]['Plotobject'].get_outerboundary(), 1, heightperfloorR)
             
             elif dict_sorted[i]['Plotobject']. get_area_type() == 2:
-                R(dict_sorted[i]['Plotobject'].get_outerboundary(), offsetR, 2, heightperfloorR)
+                meshes_list, lines_list, ground = R(dict_sorted[i]['Plotobject'].get_outerboundary(), 2, heightperfloorR)
             
             elif dict_sorted[i]['Plotobject']. get_area_type() == 3:
                 meshes_list, lines_list, ground = B(dict_sorted[i]['Plotobject'].get_outerboundary(),colorm, colorl, colorp, 3, heightperfloorB)
@@ -1132,19 +1386,19 @@ def generateTypeL (dict_sorted, offsetR, offsetH, heightperfloorR, heightperfloo
                 meshes_list, lines_list, ground = B(dict_sorted[i]['Plotobject'].get_outerboundary(), colorm,colorl, colorp, 6, heightperfloorB)
             
             elif dict_sorted[i]['Plotobject']. get_area_type() == 7:
-                meshes_list, lines_list, ground = H(dict_sorted[i]['Plotobject'].get_outerboundary(), offsetH, 7, heightperfloorH)
+                meshes_list, lines_list, ground = H(dict_sorted[i]['Plotobject'].get_outerboundary(), 7, heightperfloorH)
             
             elif dict_sorted[i]['Plotobject']. get_area_type() == 8:
-                meshes_list, lines_list, ground = H(dict_sorted[i]['Plotobject'].get_outerboundary(),offsetH,  8, heightperfloorH)
+                meshes_list, lines_list, ground = H(dict_sorted[i]['Plotobject'].get_outerboundary(),  8, heightperfloorH)
             
             elif dict_sorted[i]['Plotobject']. get_area_type() == 9:
-                meshes_list, lines_list, ground = H(dict_sorted[i]['Plotobject'].get_outerboundary(),offsetH,  9, heightperfloorH)
+                meshes_list, lines_list, ground = H(dict_sorted[i]['Plotobject'].get_outerboundary(),  9, heightperfloorH)
             
             elif dict_sorted[i]['Plotobject']. get_area_type() == 10:
-                meshes_list, lines_list, ground = H(dict_sorted[i]['Plotobject'].get_outerboundary(), offsetH, 10, heightperfloorH)
+                meshes_list, lines_list, ground = H(dict_sorted[i]['Plotobject'].get_outerboundary(), 10, heightperfloorH)
             
             elif dict_sorted[i]['Plotobject']. get_area_type() == 11:
-                meshes_list, lines_list, ground = H(dict_sorted[i]['Plotobject'].get_outerboundary(), offsetH, 11, heightperfloorH)
+                meshes_list, lines_list, ground = H(dict_sorted[i]['Plotobject'].get_outerboundary(), 11, heightperfloorH)
 
             meshes_listL.append(meshes_list)
         
@@ -1154,6 +1408,7 @@ def generateTypeL (dict_sorted, offsetR, offsetH, heightperfloorR, heightperfloo
         
             
     return meshes_listL, lines_listL, groundes, green
+
 
 def offsetAndGenerateShapeO(arraypoints, colorm, colorl, colorp , floors, heightperfloor):
     global scene 
@@ -1226,7 +1481,7 @@ def draw_system(lines):
         scene.add(vis_line)
 #draw plane surface        
 def plane(xCordsArray,yCordsArray,color):
-
+    
     shape_Green = THREE.Shape.new()
 
     for i in range(len(xCordsArray)):
@@ -1308,8 +1563,6 @@ def generateShape(xCordsArray,yCordsArray, color, colorl, floors, heightperfloor
         linematerial.color = colorl
         line = THREE.LineSegments.new( edgesout, linematerial )
         line_list1.append(line)
-        
-
         
         scene.add(line)
         
@@ -1470,7 +1723,7 @@ def generateNumpyArray (plotboundaries):
         Point_list.append(temp_list)
         temp_list=[]
       
-    SUB_SUB_NUMPY = [[np.array(k) * 40 for k in i] for i in plotboundaries]
+    SUB_SUB_NUMPY = [[np.array(k) * 1 for k in i] for i in plotboundaries]
     # print("biggerscale", SUB_SUB_NUMPY)
     
     return SUB_SUB_NUMPY
@@ -2035,6 +2288,628 @@ def on_dbl_click(event):
     scene.remove(curve_object_road)
     update_Boundary()
     update_road()
+
+##########################################################################################
+def polygonDivider(inputPolygonsAsNp,minSize = 0, maxSize = 250000, H_or_V = 1, mustHaveStreetConnection = False,streetToConnectToAsNPVertices = [], randomizeH_V = False, force_H = False, force_V = False,min_compactness = 0, finishedPolygons = [],percentageOfCut = 50, count = 0, turnCount = 0):
+    #Explanation of polygon input:
+    #InputPolygonsAsNp: The Polygon you want to subdivide. Geometry should be displayed as a list with the vertices of the polygon in it in the form of np-vectors
+    #minSize: The minimal size a generated plot is allowed to have
+    #maxSize: the maximal size a generated plot is allowed to have (not guaranteed to always be smaller than this)
+    #H_or_V: You can, but don't have to, decide wether to start by slicing horizontally or Vertically, 0: Slizes Vertical, 1: Slizes horizontal
+    #MustHaveStreetConnection: True or False, decides wether all newly generated plots have to share a side with the initial polygon
+    #streetToConnectToAsNPVertices: MANDATORY to include if MustHaveStreetConnection is = True! The Initial Polygon that all newly created polygons are supposed to share an edge with
+    #randomizeH_V: Put True to let the function randomize with each iteration if the polygons are slized vertically or horizontally
+    #Force_H/Force_V: Forces the desired direction, no other direction will be used for the split
+    #min_compactness: number between 0-1 that defines the required compactness of the generated Plots. NOT IMPLEMENTED YET
+
+    if len(inputPolygonsAsNp) == 0:
+        return finishedPolygons
+    if type(inputPolygonsAsNp[0]) != list:      #Unify data-structure
+        inputPolygonsAsNp = [inputPolygonsAsNp.copy()]
+    H_or_V += 1
+
+    if force_V == True:     #Create Possibility to force algorhythm to only cut in one direction
+        cutDir = "V"
+    elif force_H == True:
+        cutDir = "H"
+    elif randomizeH_V == True:
+        numb = random.randint(0,1)
+        if numb == 0:
+            cutDir = "V"
+        else:
+            cutDir = "H"
+    elif H_or_V % 2:
+        cutDir = "V"
+    else:
+        cutDir = "H"
+
+    if count > 10:       #if algorythm tries too often it stops automatically
+        return inputPolygonsAsNp
+
+    currentFinishedPolys = []
+    for i in finishedPolygons:
+        currentFinishedPolys.append(i)
+    
+    currentPoly = []
+    for i in inputPolygonsAsNp:
+        currentPoly.append(i)
+
+    
+    for i in range(len(currentPoly)):   #   For every "open" polygon that still needs processing
+        splitPoly = polygonSplit(currentPoly[i],cutDir,percentageOfCut)
+        
+        print("splitPoly", splitPoly)
+        if type(splitPoly) is str:
+            if count <= 5:
+                count += 1
+                return polygonDivider(currentPoly, minSize, maxSize, H_or_V, mustHaveStreetConnection ,streetToConnectToAsNPVertices , randomizeH_V , force_H , force_V ,min_compactness , currentFinishedPolys,percentageOfCut-(percentageOfCut/5) , count , turnCount)
+            
+            else:
+                inputPolygonsAsNp.pop(i)
+                return polygonDivider(currentPoly, minSize, maxSize, H_or_V, mustHaveStreetConnection ,streetToConnectToAsNPVertices , randomizeH_V , force_H , force_V ,min_compactness , currentFinishedPolys,percentageOfCut , count , turnCount)
+        
+        newLeftPolys = splitPoly[0]
+        newRightPolys = splitPoly[1]
+        leftArea = []
+        rightArea = []
+        for j in newLeftPolys:
+            area = NumpyArea(j)
+            if area > maxSize:
+                leftArea.append("Too Big")
+                continue
+            elif area < minSize:
+                leftArea.append("Too Small")
+                continue
+            else:
+                leftArea.append("Right")
+
+        for j in newRightPolys:
+            area = NumpyArea(j)
+            if area > maxSize:
+                rightArea.append("Too Big")
+                continue
+            elif area < minSize:
+                rightArea.append( "Too Small")
+                continue
+            else:
+                rightArea.append("Right")
+        leftCompactness = []
+        rightCompactness = []
+        for k in newLeftPolys:
+            perimeter = 0
+            polygonLines = []
+            for c in range(len(k)):   #Convert Polygon to lines
+                if c < len(k)-1:
+                    CurrentLine = [k[c], k[c+1]]
+                    polygonLines.append(CurrentLine)
+                else:
+                    CurrentLine = [k[c], k[c-(len(k)-1)]]
+                    polygonLines.append(CurrentLine)
+            for s in polygonLines:
+                perimeter += np.linalg.norm(s[1]-s[0])
+            compactness = 4 * np.pi * NumpyArea(k) / perimeter ** 2
+            if compactness >= min_compactness:
+                leftCompactness.append(True)
+            else:
+                leftCompactness.append(False)
+
+        for k in newRightPolys:
+            perimeter = 0
+            polygonLines = []
+            for c in range(len(k)):   #Convert Polygon to lines
+                if c < len(k)-1:
+                    CurrentLine = [k[c], k[c+1]]
+                    polygonLines.append(CurrentLine)
+                else:
+                    CurrentLine = [k[c], k[c-(len(k)-1)]]
+                    polygonLines.append(CurrentLine)
+            for s in polygonLines:
+                perimeter += np.linalg.norm(s[1]-s[0])
+            compactness = 4 * np.pi * NumpyArea(k) / perimeter ** 2
+            if compactness >= min_compactness:
+                rightCompactness.append(True)
+            else:
+                rightCompactness.append(False)
+
+        if any(leftCompactness) == False or any(rightCompactness) == False:
+            if turnCount % 2:
+                if cutDir == "H":
+                    turnCount += 1  
+                    return polygonDivider(currentPoly, minSize, maxSize, 1, mustHaveStreetConnection ,streetToConnectToAsNPVertices , False , force_H , force_V ,min_compactness , currentFinishedPolys,percentageOfCut , count , turnCount)
+                else:
+                    turnCount += 1  
+                    return polygonDivider(currentPoly, minSize, maxSize, 2, mustHaveStreetConnection ,streetToConnectToAsNPVertices , False , force_H , force_V ,min_compactness , currentFinishedPolys,percentageOfCut , count , turnCount)
+            
+
+        if mustHaveStreetConnection == True:        #If required checks if new polygons connect to streets
+
+            if any(y == "Too Small" for y in leftArea) and any(y == "Too Small" for y in rightArea): #Dividing the Polygon return areas too small, mark undivided polygon as finished
+                turnCount = 0
+                count = 0
+                currentFinishedPolys.append(currentPoly[i])
+                currentPoly.pop(i)
+                return polygonDivider(currentPoly, minSize, maxSize, H_or_V, mustHaveStreetConnection ,streetToConnectToAsNPVertices , randomizeH_V , force_H , force_V ,min_compactness , currentFinishedPolys,percentageOfCut , count , turnCount)
+
+            connectStreetLines = []
+            for c in range(len(streetToConnectToAsNPVertices)):   #Convert Polygon to lines
+                if c < len(streetToConnectToAsNPVertices)-1:
+                    CurrentLine = [streetToConnectToAsNPVertices[c], streetToConnectToAsNPVertices[c+1]]
+                    connectStreetLines.append(CurrentLine)
+                else:
+                    CurrentLine = [streetToConnectToAsNPVertices[c], streetToConnectToAsNPVertices[c-(len(streetToConnectToAsNPVertices)-1)]]
+                    connectStreetLines.append(CurrentLine)
+            streetConLeft = []
+            streetConRight = []
+
+            for k in newLeftPolys:  #check if Left Polygon(s) connect to street
+                tempOnline = 0
+                for y in k:
+                    if pointOnPolygon(y,connectStreetLines) == True:
+                        tempOnline += 1
+                if tempOnline >= 2:
+                    streetConLeft.append(True)
+                else:
+                    streetConLeft.append(False)
+ 
+            for k in newRightPolys:     #check if Right Polygon(s) connect to street
+                tempOnline = 0
+                for y in k:
+                    if pointOnPolygon(y,connectStreetLines) == True:
+                        tempOnline += 1
+                if tempOnline >= 2:
+                    streetConRight.append(True)
+                else:
+                    streetConRight.append(False)
+            
+            if all(streetConLeft) == False and all(streetConRight) == False:        #Further divison of current polygon not possible, mark undivided polygon as finished
+                turnCount = 0
+                count = 0
+                currentFinishedPolys.append(currentPoly[i])
+                currentPoly.pop(i)
+                return polygonDivider(currentPoly, minSize, maxSize, H_or_V, mustHaveStreetConnection ,streetToConnectToAsNPVertices , randomizeH_V , force_H , force_V ,min_compactness , currentFinishedPolys,percentageOfCut , count , turnCount)
+
+            elif any(streetConLeft) == False or any(streetConRight) == False:
+                if count <=5:
+                    count += 1
+                    if turnCount % 2:
+                        if cutDir == "H":
+                            turnCount += 1  
+                            return polygonDivider(currentPoly, minSize, maxSize, 1, mustHaveStreetConnection ,streetToConnectToAsNPVertices , False , force_H , force_V ,min_compactness , currentFinishedPolys,percentageOfCut , count , turnCount)
+                        else:
+                            turnCount += 1  
+                            return polygonDivider(currentPoly, minSize, maxSize, 2, mustHaveStreetConnection ,streetToConnectToAsNPVertices , False , force_H , force_V ,min_compactness , currentFinishedPolys,percentageOfCut , count , turnCount)
+                        
+                    else:
+                        turnCount = 0
+                        count = 0
+                        currentFinishedPolys.append(currentPoly[i])
+                        currentPoly.pop(i)
+                        return polygonDivider(currentPoly, minSize, maxSize, H_or_V, mustHaveStreetConnection ,streetToConnectToAsNPVertices , randomizeH_V , force_H , force_V ,min_compactness , currentFinishedPolys,percentageOfCut , count , turnCount)
+                else:
+                    turnCount = 0
+                    count = 0
+                    currentFinishedPolys.append(currentPoly[i])
+                    currentPoly.pop(i)
+                    return polygonDivider(currentPoly, minSize, maxSize, H_or_V, mustHaveStreetConnection ,streetToConnectToAsNPVertices , randomizeH_V , force_H , force_V ,min_compactness , currentFinishedPolys,percentageOfCut , count , turnCount)
+                
+            elif all(streetConLeft) == True and all(streetConRight) == True:        #Condition met: All New Polygons have street-access
+                if all(y == "Right" for y in leftArea) and all(y == "Right" for y in rightArea):    #Perfectly finishes: Area is correct and Plots connect to streets
+                    for x in newLeftPolys:
+                        currentFinishedPolys.append(x)
+                    for x in newRightPolys:
+                        currentFinishedPolys.append(x)
+                    count = 0
+                    turnCount = 0
+                    currentPoly.pop(i)
+                    return polygonDivider(currentPoly, minSize, maxSize, H_or_V, mustHaveStreetConnection ,streetToConnectToAsNPVertices , randomizeH_V , force_H , force_V ,min_compactness , currentFinishedPolys,percentageOfCut , count , turnCount)
+                elif  all(y == "Too Big" for y in leftArea) and all(y == "Too Big" for y in rightArea):       #Both sides Valid, but have to be divided further
+                    if count <= 5:
+                        currentPoly.pop(i)
+                        for x in newRightPolys:
+                            currentPoly.insert(0, x)
+                        for x in newLeftPolys:
+                            currentPoly.insert(0, x)
+                        count += 1
+                        return polygonDivider(currentPoly, minSize, maxSize, H_or_V, mustHaveStreetConnection ,streetToConnectToAsNPVertices , randomizeH_V , force_H , force_V ,min_compactness , currentFinishedPolys,percentageOfCut , count , turnCount)
+                    else:
+                        turnCount = 0
+                        count = 0
+                        currentFinishedPolys.append(currentPoly[i])
+                        currentPoly.pop(i)
+                        return polygonDivider(currentPoly, minSize, maxSize, H_or_V, mustHaveStreetConnection ,streetToConnectToAsNPVertices , randomizeH_V , force_H , force_V ,min_compactness , currentFinishedPolys,percentageOfCut , count , turnCount)
+
+                elif all(y == "Too Small" for y in leftArea) == False and any(y == "Too Small" for y in rightArea) == False:  #Two sides are not all perfect, but none is too small
+                    if count <= 5:
+                        for z in range(len(newLeftPolys)):
+                            if leftArea[z] == "Right":
+                                currentFinishedPolys.append(newLeftPolys[z])
+                                del newLeftPolys[z]
+                        for z in range(len(newRightPolys)):
+                            if rightArea[z] == "Right":
+                                currentFinishedPolys.append(newRightPolys[z])
+                                del newRightPolys[z]
+                        currentPoly.pop(i)
+                        for x in newRightPolys:
+                            currentPoly.insert(0, x)
+                        for x in newLeftPolys:
+                            currentPoly.insert(0, x)
+                        count += 1
+                        return polygonDivider(currentPoly, minSize, maxSize, H_or_V, mustHaveStreetConnection ,streetToConnectToAsNPVertices , randomizeH_V , force_H , force_V ,min_compactness , currentFinishedPolys,percentageOfCut , count , turnCount)
+                    else:
+                        turnCount = 0
+                        count = 0
+                        currentFinishedPolys.append(currentPoly[i])
+                        currentPoly.pop(i)
+                        return polygonDivider(currentPoly, minSize, maxSize, H_or_V, mustHaveStreetConnection ,streetToConnectToAsNPVertices , randomizeH_V , force_H , force_V ,min_compactness , currentFinishedPolys,percentageOfCut , count , turnCount)
+
+                elif  any(y == "Too Small" for y in leftArea) == False and any(y == "Too Small" for y in rightArea):
+                    
+                    if count <= 5:
+                        count += 1
+                        return polygonDivider(currentPoly, minSize, maxSize, H_or_V, mustHaveStreetConnection ,streetToConnectToAsNPVertices , randomizeH_V , force_H , force_V ,min_compactness , currentFinishedPolys,percentageOfCut-(percentageOfCut/2) , count , turnCount)
+                    else:
+                        turnCount = 0
+                        count = 0
+                        currentFinishedPolys.append(currentPoly[i])
+                        currentPoly.pop(i)
+                        return polygonDivider(currentPoly, minSize, maxSize, H_or_V, mustHaveStreetConnection ,streetToConnectToAsNPVertices , randomizeH_V , force_H , force_V ,min_compactness , currentFinishedPolys,percentageOfCut , count , turnCount)
+
+                elif  any(y == "Too Small" for y in leftArea) and any(y == "Too Small" for y in rightArea) == False:
+                    
+                    if count <= 5:
+                        count += 1
+                        return polygonDivider(currentPoly, minSize, maxSize, H_or_V, mustHaveStreetConnection ,streetToConnectToAsNPVertices , randomizeH_V , force_H , force_V ,min_compactness , currentFinishedPolys,percentageOfCut+((-(percentageOfCut)+100)/2)/count , count , turnCount)
+                    else:
+                        turnCount = 0
+                        count = 0
+                        currentFinishedPolys.append(currentPoly[i])
+                        currentPoly.pop(i)
+                        return polygonDivider(currentPoly, minSize, maxSize, H_or_V, mustHaveStreetConnection ,streetToConnectToAsNPVertices , randomizeH_V , force_H , force_V ,min_compactness , currentFinishedPolys,percentageOfCut-(percentageOfCut/2)/count , count , turnCount)
+
+
+
+        count += 1
+        return polygonDivider(currentPoly, minSize, maxSize, H_or_V, mustHaveStreetConnection ,streetToConnectToAsNPVertices , randomizeH_V , force_H , force_V ,min_compactness , currentFinishedPolys,percentageOfCut , count , turnCount)
+
+def NumpyArea(verticesAsNP):
+
+    n = len(verticesAsNP) # of verticesAsNP
+    area = 0
+
+    for i in range(n):
+        j = (i + 1) % n
+        area += (verticesAsNP[i][0] * verticesAsNP[j][1])
+        area -= (verticesAsNP[j][0] * verticesAsNP[i][1])
+    area = abs(area)/2.0
+
+    return area
+
+def arrayIndex(arrayList,searchedArray):
+    for i in range(len(arrayList)):
+        if np.all(searchedArray == arrayList[i]):
+            return i
+
+def minimalBoundingBox(pointsOfPolyAsNP): #Find the minimum bounding box for an polygon, Output is always clockwise! (at least never encountered different)
+    
+    pointsOfPoly = []
+    for i in pointsOfPolyAsNP:
+        TempArrayToList = i.tolist()
+        pointsOfPoly.append (TempArrayToList)
+    
+    min_bounding_box_geom = geometry.Polygon(pointsOfPoly).minimum_rotated_rectangle
+    min_bounding_box = min_bounding_box_geom.exterior.coords[:-1]
+    #Child: "Dad, what rhymes on orange?" 
+    # ... 
+    #Dad: "No it doesn't"
+    min_bounding_boxAsNP = []
+    for i in min_bounding_box:
+        min_bounding_boxAsNP.append(np.array([i[0],i[1]]))
+    return min_bounding_boxAsNP
+
+def offsetNpPoly(points, offset, outer_ccw = 1):
+    oldX = []
+    oldY = []
+    for i in points:
+        point = i.tolist()
+        oldX.append(point[0])
+        oldY.append(point[1])
+
+
+    num_points = len(oldX)
+
+    newPoints = []
+
+    for indexpoint in range(num_points):
+        prev = (indexpoint + num_points -1 ) % num_points
+        next = (indexpoint + 1) % num_points
+        vnX =  oldX[next] - oldX[indexpoint]
+        vnY =  oldY[next] - oldY[indexpoint]
+        vnnX, vnnY = normalizeVec(vnX,vnY)
+        nnnX = vnnY
+        nnnY = -vnnX
+        vpX =  oldX[indexpoint] - oldX[prev]
+        vpY =  oldY[indexpoint] - oldY[prev]
+        vpnX, vpnY = normalizeVec(vpX,vpY)
+        npnX = vpnY * outer_ccw
+        npnY = -vpnX * outer_ccw
+        bisX = (nnnX + npnX) * outer_ccw
+        bisY = (nnnY + npnY) * outer_ccw
+        bisnX, bisnY = normalizeVec(bisX,  bisY)
+        bislen = offset /  np.sqrt((1 + nnnX*npnX + nnnY*npnY)/2)
+
+        newPoints.append(np.array([oldX[indexpoint] + bislen * bisnX, oldY[indexpoint] + bislen * bisnY]))
+    return newPoints
+
+def arrangePolygonPieces(listOfPiecesAsNP, counter = 0):
+    loops = []
+    for i in listOfPiecesAsNP:
+        if len(loops) == 0:
+            loops.append(i)
+            continue
+        appended = False
+        for k in loops:
+            if np.all(i[0] == k[-1]):
+                for f in i:
+                    k.append(f)
+                    appended = True
+            if appended == True:
+                break
+        if appended == False:
+            loops.append(i)
+    newLoops = []
+    if all(np.all(i[0] == i[-1]) for i in loops) or counter > 5:
+        for t in loops:
+            singleLoop = []
+            for j in t:
+                if len(singleLoop) == 0:
+                    singleLoop.append(j)
+                elif any(np.all(j == x) for x in singleLoop) == False:
+                    singleLoop.append(j)
+            newLoops.append(singleLoop)
+        return newLoops
+    else:
+        counter =+1
+        arrangePolygonPieces(loops, counter)
+
+
+    distance = np.sqrt(x*x+y*y)
+    return x/distance, y/distance
+
+def polygonSplit(unidirectionalPolygonAsNp,cuttingDir_H_or_V,percentageOfCut):   #Input can be whatever way, function works with counterclockwise polygons though! (returns Clockwise)
+    
+    if determine_loop_direction(unidirectionalPolygonAsNp) == "Clockwise":
+        streetToConnectToAsNPVertices = []
+        for i in range(len(unidirectionalPolygonAsNp)):      #Make Polygon Counter-clockwise... there was confusion about which direction we work with, too much work to change now, i'm sorry Zuardin (Or anyone else for that matter)
+            streetToConnectToAsNPVertices.append(unidirectionalPolygonAsNp[len(unidirectionalPolygonAsNp)-(i+1)])
+    else:
+        streetToConnectToAsNPVertices = unidirectionalPolygonAsNp.copy()
+    bbo = minimalBoundingBox(streetToConnectToAsNPVertices)
+    bb = offsetNpPoly(bbo,0.001,1)#Offset Bounding Box ever so slightly larger outwards to prevent intersecting Bug that sometimes happens otherwise (presumeably because of inaccurately rounded numbers)
+    sideA = np.linalg.norm(bb[1]-bb[0])
+    sideB = np.linalg.norm(bb[1]-bb[2])
+    if cuttingDir_H_or_V == "H":   #Cut polygon Horizontaly through minimal bounding box
+        if sideA >= sideB:
+            dirVec = bb[1]-bb[0]       
+            scaledVec = scaleVec(dirVec,np.linalg.norm(dirVec)*(percentageOfCut/100))
+            cutLine = [bb[0]+scaledVec,bb[3]+scaledVec]     #Find cutting line fromBoundingbox
+        else:
+            dirVec = bb[1]-bb[2]       
+            scaledVec = scaleVec(dirVec,np.linalg.norm(dirVec)*(percentageOfCut/100))
+            cutLine = [bb[3]+scaledVec,bb[2]+scaledVec]     #Find cutting line fromBoundingboxprint("CutLine",cutLine)
+
+    if cuttingDir_H_or_V == "V":    #Cut polygon Vertically through minimal bounding box
+        if sideA <= sideB:
+            dirVec = bb[1]-bb[0]       
+            scaledVec = scaleVec(dirVec,np.linalg.norm(dirVec)*(percentageOfCut/100))
+            cutLine = [bb[0]+scaledVec,bb[3]+scaledVec]     #Find cutting line fromBoundingbox
+        else:
+            dirVec = bb[1]-bb[2]       
+            scaledVec = scaleVec(dirVec,np.linalg.norm(dirVec)*(percentageOfCut/100))
+            cutLine = [bb[3]+scaledVec,bb[2]+scaledVec]     #Find cutting line fromBoundingboxprint("CutLine",cutLine)
+
+    connectStreetLines = []
+    for i in range(len(streetToConnectToAsNPVertices)):   #Convert Polygon to lines
+        if i < len(streetToConnectToAsNPVertices)-1:
+            CurrentLine = [streetToConnectToAsNPVertices[i], streetToConnectToAsNPVertices[i+1]]
+            connectStreetLines.append(CurrentLine)
+        else:
+            CurrentLine = [streetToConnectToAsNPVertices[i], streetToConnectToAsNPVertices[i-(len(streetToConnectToAsNPVertices)-1)]]
+            connectStreetLines.append(CurrentLine)
+    for p in streetToConnectToAsNPVertices:       #Test if cutline runs through vertice of polygon which can lead to problems
+        if pointOnLineSegment(p, cutLine) == True:
+            if np.all(p != cutLine[0]) and np.all(p != cutLine[1]):
+                return "no split possible because cutline runs through vertice of polygon"
+    
+    intersectPoints = []
+    listOfVerticesAfterCut = []
+    for j in connectStreetLines: #test for intersections between polygon and cutline
+        testLines = [j,cutLine]
+        if isIntersecting(testLines) == True:
+            tempIntersectPoint = getIntersectPoint(testLines)
+            if type(tempIntersectPoint) is not np.ndarray:   # if split line is collinear with polygon-line and runs through it: no split happens at this point.
+                intersectPoints = []               
+                continue
+            elif any(np.array_equal(tempIntersectPoint, x) for x in intersectPoints):     #When cut goes through a vertice the cutpoint should not be appended twice
+                continue
+            else:
+                intersectPoints.append(tempIntersectPoint)
+                listOfVerticesAfterCut.append(j[1])
+                tempIntersectPoint = []
+    if (len(intersectPoints) % 2 ) != 0:    #Remove? Evaluate wether needed!
+        return "no split possible due to odd intersection number" 
+
+    allPtsForNewPolys = []
+    for i in streetToConnectToAsNPVertices:               #Copying polygonasnp into new list, somehow didnt work with "copy()"
+        allPtsForNewPolys.append(i)
+
+    for k in range(len(intersectPoints)):               #Insert cutpoints into their correct place in list of polygon-vertices
+        if np.all(intersectPoints[k] == listOfVerticesAfterCut[k]):
+            continue                                   
+        ind = arrayIndex(allPtsForNewPolys,listOfVerticesAfterCut[k])
+        allPtsForNewPolys.insert(ind, intersectPoints[k])
+    intersectInds = []
+    for i in intersectPoints:      #Find all indexes of all the intersectionpoints inside the list of all indexes of the entire polygon
+        intersectInds.append(arrayIndex(allPtsForNewPolys,i))
+    intersectInds.sort()
+    longIntersectInds = intersectInds.copy()
+    longAllPtsForNewPolys = allPtsForNewPolys.copy()
+    
+    for j in range(2):
+        for i in intersectInds:     #Append the entire intersectInds list to itself again to basically loop list
+            longIntersectInds.append(i)
+        for i in allPtsForNewPolys:     #Append the entire allPtsForNewPoly list to itself again to basically loop list
+            longAllPtsForNewPolys.append(i)
+    
+    if len(intersectPoints) > 2:            #If the polygon has multiple cutting-points, search for cutting-point connection that basically "Jumps back" over other points
+        intersectLines = []
+        for i in range(len(intersectPoints)):   #Convert Polygon to lines
+            if i < len(intersectPoints)-1:
+                CurrentLine = [intersectPoints[i], intersectPoints[i+1]]
+                intersectLines.append(CurrentLine)
+            else:
+                CurrentLine = [intersectPoints[i], intersectPoints[i-(len(intersectPoints)-1)]]
+                intersectLines.append(CurrentLine)
+        intersectLineLengths = []
+        for i in intersectLines:
+            intersectLineLengths.append(np.linalg.norm(i[1]-i[0]))
+        maxInd = intersectLineLengths.index(max(intersectLineLengths))
+        forbiddenLine = [[intersectLines[maxInd][0].round(5),intersectLines[maxInd][1].round(5)],[intersectLines[maxInd][1].round(5),intersectLines[maxInd][0].round(5)]]
+    
+    elif len(intersectPoints) <= 2:     #If the polygon has multiple cutting-points, search for cutting-point connection that basically "Jumps back" over other points
+        intersectLines = [[intersectPoints[0].round(5),intersectPoints[1].round(5)],[intersectPoints[1].round(5),intersectPoints[0].round(5)]]
+        lengthFromIntersectStart = []
+        for i in intersectLines:
+            lengthFromIntersectStart.append(np.linalg.norm(i[0]-cutLine[0]))
+        if lengthFromIntersectStart[0] <= lengthFromIntersectStart[1]:
+            forbiddenLineLeft = [intersectLines[0],intersectLines[0]]
+            forbiddenLineRight = [intersectLines[1],intersectLines[1]]
+        else:
+            forbiddenLineLeft = [intersectLines[1],intersectLines[1]]
+            forbiddenLineRight = [intersectLines[0],intersectLines[0]]
+
+
+    leftLoops = []
+    leftLoopParts = []
+    rightLoops = []
+    rightLoopParts = []
+
+    for i in range(len(intersectInds)):         #Find Loops on left side of Cutline
+        firstTP = longAllPtsForNewPolys[longIntersectInds[i]]
+        secondTP = longAllPtsForNewPolys[longIntersectInds[i+1]]
+        if len(intersectPoints) > 2:    #Make sure that loopfinder doesnt try to jump back over all other loops
+            if (all(np.array_equal([firstTP.round(5),secondTP.round(5)][o], forbiddenLine[0][o]) for o in range(len(forbiddenLine[0]))) or 
+            all(np.array_equal([secondTP.round(5),firstTP.round(5)][o], forbiddenLine[0][o]) for o in range(len(forbiddenLine[0])))):
+                continue
+        elif len(intersectPoints) == 2:
+            if all(np.array_equal([firstTP.round(5),secondTP.round(5)][o], forbiddenLineLeft[0][o]) for o in range(len(forbiddenLineLeft[0]))):
+                continue
+
+        testLoop = [firstTP,secondTP,longAllPtsForNewPolys[longIntersectInds[i+1]+1]]
+        currentLoop = []
+        if determine_loop_direction(testLoop) == "Counterclockwise":
+            currentLoop = [firstTP,secondTP]
+            for j in range(len(allPtsForNewPolys)):
+                currentLoop.append(longAllPtsForNewPolys[longIntersectInds[i+1]+1+j])
+                if any(np.array_equal(longAllPtsForNewPolys[longIntersectInds[i+1]+1+j], x) for x in intersectPoints):
+                    break                    
+                
+                    
+        else:
+            continue
+        
+        if np.all(currentLoop[-1] == currentLoop[0]):
+            del currentLoop[-1]
+            leftLoops.append(currentLoop)
+        else:
+            leftLoopParts.append(currentLoop)
+        
+    for i in reversed(range(len(intersectInds))):         #Find Loops on right side of Cutline
+        firstTP = longAllPtsForNewPolys[longIntersectInds[i]]
+        secondTP = longAllPtsForNewPolys[longIntersectInds[i-1]]
+
+        if len(intersectPoints) > 2:    #Make sure that loopfinder doesnt try to jump back over all other loops
+            if (all(np.array_equal([firstTP.round(5),secondTP.round(5)][o], forbiddenLine[0][o]) for o in range(len(forbiddenLine[0]))) or 
+            all(np.array_equal([secondTP.round(5),firstTP.round(5)][o], forbiddenLine[0][o]) for o in range(len(forbiddenLine[0])))):
+                continue
+        elif len(intersectPoints) == 2:
+            if all(np.array_equal([firstTP.round(5),secondTP.round(5)][o], forbiddenLineRight[0][o]) for o in range(len(forbiddenLineRight[0]))):
+                continue
+
+        testLoop = [firstTP,secondTP,longAllPtsForNewPolys[longIntersectInds[i-1]+1]]
+        currentLoop = []
+        if determine_loop_direction(testLoop) == "Counterclockwise":
+            currentLoop = [firstTP,secondTP]
+            for j in range(len(allPtsForNewPolys)):
+                currentLoop.append(longAllPtsForNewPolys[longIntersectInds[i-1]+1+j])
+                if any(np.array_equal(longAllPtsForNewPolys[longIntersectInds[i-1]+1+j], x) for x in intersectPoints):
+                    break                    
+                
+                    
+        else:
+            continue
+        if np.all(currentLoop[-1] == currentLoop[0]):
+            del currentLoop[-1]
+            rightLoops.append(currentLoop)
+        else:
+            rightLoopParts.append(currentLoop)
+
+   
+    if len(rightLoopParts) >= 2:
+        currentRightLoops = arrangePolygonPieces(rightLoopParts)
+        for i in currentRightLoops:
+            rightLoops.append(i)
+
+    if len(leftLoopParts) >= 2:
+        currentLeftLoops = arrangePolygonPieces(leftLoopParts)
+        for i in currentLeftLoops:
+            leftLoops.append(i)
+            
+    turnedLeftLoops = []
+    turnedRightLoops = []
+    for b in leftLoops:
+        tempTurn = []
+        for i in range(len(b)):      
+            tempTurn.append(b[len(b)-(i+1)])
+        turnedLeftLoops.append(tempTurn)
+    for b in rightLoops:
+        tempTurn = []
+        for i in range(len(b)):     
+            tempTurn.append(b[len(b)-(i+1)])
+        turnedRightLoops.append(tempTurn)
+    return [turnedLeftLoops,turnedRightLoops]
+
+def pointInPoly(pointAsNP,polyAsNPLines):
+    pointList = pointAsNP.tolist()
+    polyNP = []
+    poly = []
+
+    for i in polyAsNPLines:
+        polyNP.append(i[0])
+    for i in polyNP:
+        poly.append(i.tolist())
+
+    if len(poly) < 3:  # not a polygon - no areaNp
+        return False
+    
+    total = 0
+    i = 0
+    x = pointList[0]
+    y = pointList[1]
+    next = 0
+    for i in range(len(poly)):
+        next = (i + 1) % len(poly)
+        if poly[i][1] <= y < poly[next][1]:
+            if x < poly[i][0] + (y - poly[i][1]) * (poly[next][0] - poly[i][0]) / (poly[next][1] - poly[i][1]):
+                total += 1
+        elif poly[next][1] <= y < poly[i][1]:
+            if x < poly[i][0] + (y - poly[i][1]) * (poly[next][0] - poly[i][0]) / (poly[next][1] - poly[i][1]):
+                total += 1
+    if total % 2 == 0:
+        return False
+    else:
+        return True
+
+
 ############################################
 def pointInPoly(pointAsNP,polyAsNPLines):
     pointList = pointAsNP.tolist()
@@ -2647,9 +3522,22 @@ def draw_system_input(lines):
         vis_line = THREE.Line.new( line_geom, material )
         global scene
         scene.add(vis_line)
+def draw_system_substreets(plots):
+    for lines in plots:
+        for points in lines:
+            line_geom = THREE.BufferGeometry.new()
+            points = to_js(points)
+            
+            line_geom.setFromPoints( points )
+            material = THREE.LineBasicMaterial.new()
+            material.color = THREE.Color.new("#FDFEFE")
+            
+            vis_line = THREE.Line.new( line_geom, material )
+            global scene
+            scene.add(vis_line)
 ############################################
 def mainStreetGeneratorAndDrawing():
-    global Boundary_Coords_py,Input_Road_Coords_py
+    global Boundary_Coords_py,Input_Road_Coords_py, OUTPUT_Mainstreet
     BaseShapePoints=Boundary_Coords_py
     BaseShapeLines = []
     for i in range(len(BaseShapePoints)):
@@ -2668,7 +3556,7 @@ def mainStreetGeneratorAndDrawing():
         mainStreetNetwork.append(i)
     
     splitMainStreetNetwork = splitMultipleLines(mainStreetNetwork)   #Split List of Streets and Baseshape into lines useable by loopfinder
-
+    print("HIERTEST",splitMainStreetNetwork)
     splitMainStreetNetworkAsList = []
     splitMainStreetNetworkAsListRounded = []
     for i in splitMainStreetNetwork:
@@ -2678,21 +3566,22 @@ def mainStreetGeneratorAndDrawing():
 
     for i in splitMainStreetNetworkAsList:  #Round all Points in Line-Network to 8 digits after comma so small rounding errors of the linesplitter get mitigated
         for j in i:
-            temptemplist = [round(j[0],8),round(j[1],8)]
+            temptemplist = [round(j[0],0),round(j[1],0)]
             tempList.append(temptemplist)
         splitMainStreetNetworkAsListRounded.append(tempList)
         tempList = []
     
-    
-    subPlots = loop_finder(splitMainStreetNetworkAsListRounded)    #Find the Loops (Plots) out of the generated street-network
+    print("splitMainStreetNetworkAsListRounded",splitMainStreetNetworkAsListRounded)
+    subPlots = loop_finder(splitMainStreetNetworkAsListRounded)
+    OUTPUT_Mainstreet = subPlots   #Find the Loops (Plots) out of the generated street-network
     #print("PLOTS!",subPlots)
-    mockoffsetted = mockOffset(subPlots)     #Offset Mainstreets
+    #mockoffsetted = mockOffset(subPlots)     #Offset Mainstreets
 
-    mocksecondarystreets = mocksecondarystreetgenerator(mockoffsetted)  #generate secondary streets in offsetted polygon
+    #mocksecondarystreets = mocksecondarystreetgenerator(mockoffsetted)  #generate secondary streets in offsetted polygon
 
-    mockforneighborfinder = mockpreparelinesforneighborfinder(mocksecondarystreets)     #prepare offsetted and divided polygons for neighborfinder
+    #mockforneighborfinder = mockpreparelinesforneighborfinder(mocksecondarystreets)     #prepare offsetted and divided polygons for neighborfinder
 
-    toplots = [[tuple(x) for x in sublist] for sublist in mockforneighborfinder]#Convert in Tuples
+    toplots = [[tuple(x) for x in sublist] for sublist in OUTPUT_Mainstreet]#Convert in Tuples
 
     # neighbors = find_overlapping_plots(toplots)
     # #print("Neighbors",neighbors)
@@ -2840,7 +3729,6 @@ def loop_finder(INPUT_LINES):
             FlippedStart.append(current_line[1])
             FlippedStart.append(current_line[0])
             INPUT_LINES.append(FlippedStart)
-            
     new_loops = []
     for sublist in Loops:
         is_duplicate = False
@@ -2856,7 +3744,6 @@ def loop_finder(INPUT_LINES):
 
 
     return Loops
-
 ##########################################################################################
 def find_overlapping_plots(plots):
     # Create a dictionary to store the mapping from plot number to overlapping plots
