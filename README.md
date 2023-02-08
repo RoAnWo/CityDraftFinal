@@ -1,2 +1,2 @@
 # CityDraftFinal
-https://roanwo.github.io/CityDraft/LandingPage/LangingPage.html
+https://roanwo.github.io/CityDraft/LandingPage/LandingPage.html
