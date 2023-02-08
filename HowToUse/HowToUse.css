@@ -2396,11 +2396,11 @@ textarea.w-select {
 
 .nav-link:focus-visible {
   border-radius: 4px;
-  outline-color: #0050bd;
+  outline-color: #2e2e2e;
   outline-offset: 0px;
   outline-style: solid;
   outline-width: 2px;
-  color: #0050bd;
+  color: #8b8b8b;
 }
 
 .nav-link[data-wf-focus-visible] {

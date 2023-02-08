@@ -1,22 +1,26 @@
 # Import javascript modules
 from js import THREE, window, document, Object, console, Math
+import js
 # Import pyscript / pyodide modules
 from pyodide.ffi import create_proxy, to_js
+
 #Import python module
 import math
+#import shapely
+
 # Import NumPy as np
 import numpy as np
-import random
 from random import choices,choice, randint
+import random
 from time import time
-from collections import OrderedDict
 from shapely import geometry
-#-----------------------------------------------------------------------
+from collections import OrderedDict
+
+import json
+
+
+#--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # USE THIS FUNCTION TO WRITE THE MAIN PROGRAM
-
-  
-   
-
 def main():
     # VISUAL SETUP
     # Declare the variables
@@ -35,7 +39,7 @@ def main():
     scene = THREE.Scene.new()
     back_color = THREE.Color.new(200,200,200)
     scene.background = back_color
-    camera = THREE.PerspectiveCamera.new(45, window.innerWidth/window.innerHeight,0.1, 10000)
+    camera = THREE.PerspectiveCamera.new(30, window.innerWidth/window.innerHeight,0.1, 10000)
     camera.position.y = -1000
     camera.position.x = 100
     camera.position.z = 200
@@ -62,7 +66,8 @@ def main():
     # Graphic Post Processing
     global composer
     post_process()
-    
+
+    #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     global objects, control_points, transform_control, spheres, Boundary_status, Mouse1Bool, controls,Close_Bool, preview_Sphere, spheres_road,all_spheres,all_curve_object_road,Saved,Hover_over_Save,object_clicked, output_lists,clicked_sphere, geometrie, Input_Road_Coords_py,Boundary_Coords_py, curve_material
     global sphere_geom, sphere_material,preview_Sphere,prev_sphere_geom, Reset_Mesh, Save_Mesh, raycaster, mouse, plane_Raycaster, plane_map,texture_Plane_Mesh_Mat,OUTPUT_Mainstreet
     OUTPUT_Mainstreet =[]
@@ -149,8 +154,7 @@ def main():
     curve_material.color = THREE.Color.new("rgb(255,0,0)")
     # Set up responsive window
 
-    resize_proxy = create_proxy(on_window_resize)
-    window.addEventListener('resize', resize_proxy) 
+    # Set up responsive window
 
     transform_control = THREE.TransformControls.new(camera, renderer.domElement)
     transform_drag_proxy = create_proxy(transform_drag)
@@ -173,12 +177,12 @@ def main():
 
     dbl_click_proxy = create_proxy(on_dbl_click)
     document.addEventListener('dblclick', dbl_click_proxy)
-    
-    
+
+    controls = THREE.OrbitControls.new(camera, renderer.domElement)
     global input_param   
 
     input_param = {  
-    
+                   
     "Map1" : Map1,
     "Map2" : Map2,
     "Map3" : Map3,
@@ -189,52 +193,51 @@ def main():
     "AssignUsage" :False,
     "GenerateCity" : False,
     "Generate" : Generate,
-    "RegenerateAll" : regenerateAll,
+    "Regenerate" : regenerateAll,
     
-    "population" : 500,
-    "iputOld" : 500,
-    "population_density" : 4,
-    "populationold_density" : 4,
+    "population" : 1,
+    "iputOld" : 1,
+    "density" : 1,
+    "populationold_density" : 1,
     
     #Industrial storagespace
-    "heightperfloorI"   : 5,
-    "oldheightperfloorI" : 5,
+    "height"   : 5,
+    "oldheight" : 5,
     "distancestreetI" : 5, 
     "OlddistancestreetI" : 5,
     
     #0ffice
-    "heightperfloorO"   : 4,
+    "heightperfloorO"   :4,
     "oldheightperfloorO" : 4,
     "distancetostreetO"   : 3,
     "olddistancetostreetO" : 3,
     
     "LivingIndustrial" : 55,
-    
+    "workplaces": 1, 
+    "workingpeopleold": 1,
     "floors" : 1, 
     "offsetR": 4, 
     "offsetB" : 3, 
     "offsetH" : 2, 
     "heightperfloorR": 4, 
     "heightperfloorB": 3.5, 
-    "heightperfloorH": 4
-   
+    "heightperfloorH": 4, 
+    
     }
     input_param = Object.fromEntries(to_js(input_param))
     #-----------------------------------------------------------------------
      #GUI
-     
-    global gui
+    global gui, workingpeople
     gui = window.lil.GUI.new()
     
-    map_folder = gui.addFolder('chooseMap')
+    map_folder = gui.addFolder('choose map')
     map_folder.add(input_param, 'Map1')
     map_folder.add(input_param, 'Map2')
     map_folder.add(input_param, 'Map3')
     map_folder.add(input_param, 'removeMap')
     
     map_folder.close()
-    
-    gen_folder = gui.addFolder('generate step-by-step')
+    gen_folder = gui.addFolder('generate streetnetwork')
     gen_folder.add(input_param, 'MainStreets')
     gen_folder.add(input_param, 'SecondaryStreets')
     gen_folder.add(input_param, 'AssignUsage')
@@ -243,27 +246,25 @@ def main():
     gen_folder.add(input_param, 'GenerateCity')
     
     gen_folder.add(input_param, 'Generate')
-    gen_folder.add(input_param, 'RegenerateAll')
+    gen_folder.add(input_param, 'Regenerate')
     
     gen_folder.open()
     
-    param_folder = gui.addFolder('values')
-    param_folder.add(input_param, 'population', 0,10000,1)
-    param_folder.add(input_param, 'population_density', 0,10,1)
+    param_folder = gui.addFolder('demographic settings')
+    param_folder.add(input_param, 'population', 0,1,0.1)
+    param_folder.add(input_param, 'density', 0,5,0.1)
 
     
-    I_folder = gui.addFolder('Industrial Storage')
-    I_folder.add(input_param, 'heightperfloorI', 0,8,1)
-    I_folder.add(input_param, 'distancestreetI', 0,8,1)
+    I_folder = gui.addFolder('industrial storage')
+    I_folder.add(input_param, 'height', 0,15,1)
 
     I_folder.open()
      
-    I_folder = gui.addFolder('Offices')
-    I_folder.add(input_param, 'heightperfloorO', 0,5,0.2)
-    # I_folder.add(input_param, 'distancetostreetO', 2,8,1)
+    I_folder = gui.addFolder('offices')
+    I_folder.add(input_param, 'workplaces', 0,1,0.1)
     I_folder.open()
 
-   
+    
     global linesIfinal, meshesIfinal
 
     global count_Mainstreet,count_Substreet,count_Usage
@@ -278,6 +279,7 @@ def main():
     global curve_object_road
     curve_object_road = None
 
+
     #-----------------------------------------------------------------------
 
     # RENDER + UPDATE THE SCENE AND GEOMETRIES
@@ -286,260 +288,153 @@ def main():
     render()
 
 
+def Info_Table():
+    
+    global maxpopulation, areaLiving, workingpeople, areaIndustrials, Greenareaperperson, areaGreenAll, areaOffices, areaEducationAll
+    
+    if areaGreenAll == None:
+        areaGreenAll = 0
+    
+    areaGreenAll = round(areaGreenAll)
+    
+    print("Greenareaperperson", Greenareaperperson)
+    Greenareaperperson = round(Greenareaperperson)
+    
+    population = maxpopulation*input_param.population
+    population = round(population)
+    workingpeople = round(workingpeople)
+    
+    LivingSpacepp = 30
+    LivingVol = 4
+    IndusVol_var = 6
+    OfficeVol_var = 10
+    
+    body = js.document.getElementsByTagName('body')[0]
+    
+    existing_popul = js.document.getElementsByClassName("info-table-container")
+    for i in existing_popul:
+        body.removeChild(i)
 
-def Generate():
-    global light2, light, count_Mainstreet,count_Substreet,count_Usage
-    scene.clear()
-    scene.add(light2, light)
-    scene.add(Reset_Mesh)
-    scene.add(Save_Mesh)
-    scene.add(light)
-    scene.add(light2)
-    scene.add(preview_Sphere)
-    scene.add( plane_map )
+    ################################################
 
-####Generate Mainstreet
-    if input_param.MainStreets == True or count_Mainstreet < 1 and input_param.GenerateCity == True or count_Mainstreet < 1 and input_param.SecondaryStreets == True or count_Mainstreet < 1 and input_param.AssignUsage == True:
-            mainStreetGeneratorAndDrawing()
-            count_Mainstreet += 1
-####Generate Substreet
-    if input_param.SecondaryStreets == True or count_Substreet < 1 and input_param.GenerateCity == True or count_Substreet < 1 and input_param.SecondaryStreets == True or count_Substreet < 1 and input_param.AssignUsage == True:
-            SubStreetGeneratorAndDrawing()
-            count_Substreet += 1
-####Assign Usage
-    if input_param.AssignUsage == True or count_Usage < 1 and input_param.GenerateCity == True:
-        generatePlotsAndAssign()
-        count_Usage += 1
-### Generate City    
-    if input_param.GenerateCity == True:
-        global meshesfinal_listL, linesfinal_listL
-        generateL ()
-        global meshfinal_list2, linefinal_list2, meshplaneI
-        generateI()
-        global meshO_list2, lineO_list2
-        generateO()
-        generateG()
-        generateE()
+    Popul = js.document.createElement('p')
+    Popul_span = js.document.createElement('span')
+    Popul_span.textContent = str(population)
+    Popul_span.className = "Popul-span"
+    Popul.appendChild(js.document.createTextNode("Popoulation: "))
+    Popul.appendChild(Popul_span)
+    Popul.className = "value-Popul-container"
+    ####################################
+    WorkPl = js.document.createElement('p')
+    WorkPl_span = js.document.createElement('span')
+    WorkPl_span.textContent = str(workingpeople)
+    WorkPl_span.className = "WorkPl-span"
+    WorkPl.appendChild(js.document.createTextNode("Number of workplaces: "))
+    WorkPl.appendChild(WorkPl_span)
+    WorkPl.className = "value-WorkPl-container"
+    ####################################
+    Green = js.document.createElement('p')
+    Green_span_pp = js.document.createElement('span')
+    Green_span_pp.textContent = str(Greenareaperperson)+" m² p/P"
+    Green_span_pp.className = "Greenpp-span"
+    Green_span_oa = js.document.createElement('span')
+    Green_span_oa.textContent = str(areaGreenAll)+" m²"
+    Green_span_oa.className = "Greenoa-span"
 
-def regenerateAll():
-    
-    global light2, light
-    scene.clear()
-    scene.add(light2, light)
-    scene.add(Reset_Mesh)
-    scene.add(Save_Mesh)
-    scene.add(light)
-    scene.add(light2)
-    scene.add(preview_Sphere)
-    scene.add( plane_map )
-    mainStreetGeneratorAndDrawing()
-    SubStreetGeneratorAndDrawing()
-    generatePlotsAndAssign()
-    global meshesfinal_listL, linesfinal_listL
-    generateL ()
-    global meshfinal_list2, linefinal_list2, meshplaneI
-    generateI()
-    global meshO_list2, lineO_list2
-    generateO()
-    generateG() 
-    generateE()
-    
-    # planeGeometry = THREE.PlaneGeometry.new( 2000, 2000, 32, 32 )
-    
-    # planeMaterial = THREE.MeshPhongMaterial.new()
-    
-    # plane = THREE.Mesh.new( planeGeometry, planeMaterial )
-    
-    # plane.translateZ(-2)
-    # # plane.transparent = True 
-    # # plane.opacity = 0.5
-    # plane.receiveShadow = True
-    
-    # scene.add(plane)      
-    
-    planeGeometry = THREE.PlaneGeometry.new( 2000, 2000, 32, 32 )
-    color = THREE.Color.new("rgb(200,200,200)")
-    planeMaterial = THREE.ShadowMaterial.new()
-    planeMaterial.color = color
-    
-    plane = THREE.Mesh.new( planeGeometry, planeMaterial )
-    
-    plane.translateZ(-2)
-    plane.transparent = True 
-    plane.opacity = 0
-    plane.receiveShadow = True
-    
-    scene.add(plane) 
+    Green.appendChild(js.document.createTextNode("Green Space: "))
+    Green.appendChild(Green_span_pp)
+    Green.appendChild(Green_span_oa)
+    Green.className = "value-Green-container"
 
-# def mainStreetGeneratorAndDrawing():
-#     global Boundary_Coords_py,Input_Road_Coords_py, OUTPUT_Mainstreet
-#     BaseShapePoints=Boundary_Coords_py
-#     BaseShapeLines = []
-#     for i in range(len(BaseShapePoints)):
-#         if i < len(BaseShapePoints)-1:
-#             CurrentLine = [BaseShapePoints[i], BaseShapePoints[i+1]]
-#             print("CURRENT", CurrentLine)
-#             BaseShapeLines.append(CurrentLine)
-#         else:
-#             CurrentLine = [BaseShapePoints[i], BaseShapePoints[i-(len(BaseShapePoints)-1)]]
-#             BaseShapeLines.append(CurrentLine)
-    
-#     InputLines=Input_Road_Coords_py.copy()
-#     InputLines=random.shuffle(InputLines)
-#     mainStreetNetwork = mainStreetGenerator(BaseShapeLines,InputLines)
+    ####################################
+    Living = js.document.createElement('p')
+    Living_span_pp = js.document.createElement('span')
+    Living_span_pp.textContent = str(LivingSpacepp)+" m² p/P"
+    Living_span_pp.className = "Livingpp-span"
+    Living_span_oa = js.document.createElement('span')
+    Living_span_oa.textContent = str(areaLiving)+" m²"
+    Living_span_oa.className = "Livingoa-span"
 
-#     for i in BaseShapeLines:                            #Append BaseShapeLines to list of generated Streets
-#         mainStreetNetwork.append(i)
-    
-#     splitMainStreetNetwork = splitMultipleLines(mainStreetNetwork)   #Split List of Streets and Baseshape into lines useable by loopfinder
+    Living.appendChild(js.document.createTextNode("Living Space: "))
+    Living.appendChild(Living_span_pp)
+    Living.appendChild(Living_span_oa)
+    Living.className = "value-Living-container"
+    ####       ######         ########    #####        ######
 
-#     splitMainStreetNetworkAsList = []
-#     splitMainStreetNetworkAsListRounded = []
-#     for i in splitMainStreetNetwork:
-#         tempList = [i[0].tolist(),i[1].tolist()]
-#         splitMainStreetNetworkAsList.append(tempList)
-#     tempList = []
+    Living_vol = js.document.createElement('p')
+    Living_vol_span = js.document.createElement('span')
+    Living_vol_span.textContent = str(LivingVol)+" m³"
+    Living_vol_span.className = "Living_vol-span"
+    Living_vol.appendChild(js.document.createTextNode("Built Living Volume: "))
+    Living_vol.appendChild(Living_vol_span)
+    Living_vol.className = "value-LivingVol-container"
+    #####################################################
 
-#     for i in splitMainStreetNetworkAsList:  #Round all Points in Line-Network to 8 digits after comma so small rounding errors of the linesplitter get mitigated
-#         for j in i:
-#             temptemplist = [round(j[0],8),round(j[1],8)]
-#             tempList.append(temptemplist)
-#         splitMainStreetNetworkAsListRounded.append(tempList)
-#         tempList = []
-    
-#     print
-#     subPlots = loop_finder(splitMainStreetNetworkAsListRounded)
-#       #Find the Loops (Plots) out of the generated street-network
-#     #print("PLOTS!",subPlots)
-#     OUTPUT_Mainstreet = subPlots
-#     #Transferring NumPy-Lines into Three.js for visualization
-#     ThreeCurrentLine = []
-#     ThreeLinesStreet = []
-#     ThreeLinesBaseShape = []
-#     ThreeLinesInput = []
-    
-#     #BaseShape
-#     for i in BaseShapeLines:
-#         for j in i:
-#             TempArrayToList = j.tolist()
-#             ThreeVec1 = THREE.Vector2.new(TempArrayToList[0],TempArrayToList[1])
-#             ThreeCurrentLine.append(ThreeVec1)
-#         ThreeLinesBaseShape.append (ThreeCurrentLine)
-#         ThreeCurrentLine = []
+    Indus = js.document.createElement('p')
+    Indus_span = js.document.createElement('span')
+    Indus_span.textContent = str(areaIndustrials)+" m²"
+    Indus_span.className = "Indus-span"
+    Indus.appendChild(js.document.createTextNode("Built Industrial Space: "))
+    Indus.appendChild(Indus_span)
+    Indus.className = "value-Indus-container"
 
-#     #InputLines
-#     for i in InputLines:
-#         for j in i:
-#             TempArrayToList = j.tolist()
-#             ThreeVec1 = THREE.Vector2.new(TempArrayToList[0],TempArrayToList[1])
-#             ThreeCurrentLine.append(ThreeVec1)
-#         ThreeLinesInput.append (ThreeCurrentLine)
-#         ThreeCurrentLine = []
+    ######### #######    ########         ########  ###
 
-#     #GeneratedStreets
-#     for i in splitMainStreetNetwork:
-#         for j in i:
-#             TempArrayToList = j.tolist()
-#             ThreeVec1 = THREE.Vector2.new(TempArrayToList[0],TempArrayToList[1])
-#             ThreeCurrentLine.append(ThreeVec1)
-#         ThreeLinesStreet.append (ThreeCurrentLine)
-#         ThreeCurrentLine = []
-    
-
-#     draw_system_streets(ThreeLinesStreet)
-#     draw_system_baseshape(ThreeLinesBaseShape)
-#     draw_system_input(ThreeLinesInput)
-
-def SubStreetGeneratorAndDrawing():
-    global OUTPUT_Mainstreet,dividedPlotsAsListRounded,dividedplotsaslines
-    #print("OUTPUT_Mainstreet",OUTPUT_Mainstreet)
-    subPlotsAsNP = []
-    for i in OUTPUT_Mainstreet:
-        tempSubPlot = []
-        for j in i:
-            tempSubPlot.append(np.array([j[0],j[1]]))
-        subPlotsAsNP.append(tempSubPlot)
-    
-    dividedplots = []
-    for i in subPlotsAsNP:
-        currentdividedplots = polygonDivider(i,0,1000,1,True,i)
-        for t in currentdividedplots:
-            dividedplots.append(t)
-    
-    dividedPlotsAsList = []
-    dividedPlotsAsListRounded = []
-    for i in dividedplots:
-        tempList = []
-        for j in i:
-            tempList.append(j.tolist())
-        dividedPlotsAsList.append(tempList)
-        tempList = []
-    
-    for i in dividedplots:
-        tempList = []
-        for j in i:
-            tempList.append([round(j[0],0),round(j[1],0)])
-        dividedPlotsAsListRounded.append(tempList)
-        tempList = []
-
-        #----> Hier dividedPlotsAsListRounded zur verwendung in Neighborfinder, usage-assignment etc.!
-    #print("dividedPlotsAsListRounded",dividedPlotsAsListRounded)
-    dividedplotsaslines = []
-    
-    for x in dividedPlotsAsListRounded:
-        tempplotasline = []
-        for i in range(len(x)):
-            if i < len(x)-1:
-                CurrentLine = [x[i], x[i+1]]
-                tempplotasline.append(CurrentLine)
-            else:
-                CurrentLine = [x[i], x[i-(len(x)-1)]]
-                tempplotasline.append(CurrentLine)
-        dividedplotsaslines.append(tempplotasline)
-    ThreeLinesSubroads =[]
-    print("DIVIDEDPLOTSASLIST",dividedPlotsAsListRounded)
-    
-    ThreeCurrentLine = []
-
-    for x in dividedplotsaslines:
-        singlePlot = []
-        for i in x:
-            for j in i:
-                #TempArrayToList = j.tolist()
-                ThreeVec1 = THREE.Vector2.new(j[0],j[1])
-                ThreeCurrentLine.append(ThreeVec1)
-            singlePlot.append(ThreeCurrentLine)
-            ThreeCurrentLine = []
-        ThreeLinesSubroads.append (singlePlot)
-        singlePlot = []
-    draw_system_substreets(ThreeLinesSubroads)
-   # print("dividedplotsaslines",dividedplotsaslines)
-    
-
-def generatePlotsAndAssign():
-    global INPUT_LINES, PLOTS, toplots, NEIGHBOURS,dividedPlotsAsListRounded,dividedplotsaslines
-    #INPUT_LINES = [[(int(point[0]), int(point[1])) for point in line] for line in dividedPlotsAsListRounded]
-    ##########################################################################################
-    
+    Indus_Vol = js.document.createElement('p')
+    Indus_Vol_span = js.document.createElement('span')
+    Indus_Vol_span.textContent = str(IndusVol_var)+" m³"
+    Indus_Vol_span.className = "IndusVol-span"
+    Indus_Vol.appendChild(js.document.createTextNode("Built Industrial Volume: "))
+    Indus_Vol.appendChild(Indus_Vol_span)
+    Indus_Vol.className = "value-IndusVol-container"
 
 
-    dividedPlotsAsListRounded
-    
-    #PLOTS= loop_finder(dividedplotsaslines)
-    PLOTS= dividedPlotsAsListRounded
-    print("Plots:",PLOTS)
-    ##########################################################################################
-    toplots = [[tuple(x) for x in sublist] for sublist in PLOTS]#Convert in Tuples
-    NEIGHBOURS = find_overlapping_plots(toplots)
-    print("Neighbours:",NEIGHBOURS)
-    ##########################################################################################
-    global DICTIONARY, POSSIBLE_CHANGES
-    DICTIONARY = convert_data(NEIGHBOURS)
-    DISTRIBUTION=find_solution(DICTIONARY)
-    POSSIBLE_CHANGES=random_distribution(DICTIONARY)
-    
-    colorPlots()
-    #print ("Distribution",DISTRIBUTION)
+    #############################
+    Offi = js.document.createElement('p')
+    Offi_span = js.document.createElement('span')
+    Offi_span.textContent = str(areaOffices)+" m²"
+    Offi_span.className = "Offi-span"
+    Offi.appendChild(js.document.createTextNode("Built Office Space: "))
+    Offi.appendChild(Offi_span)
+    Offi.className = "value-Offi-container"
+
+    ######### #######    ########         ########  ###
+
+    Offi_Vol = js.document.createElement('p')
+    Offi_Vol_span = js.document.createElement('span')
+    Offi_Vol_span.textContent = str(OfficeVol_var)+" m³"
+    Offi_Vol_span.className = "OffiVol-span"
+    Offi_Vol.appendChild(js.document.createTextNode("Built Office Volume: "))
+    Offi_Vol.appendChild(Offi_Vol_span)
+    Offi_Vol.className = "value-OffiVol-container"
+
+    ######################################
+    Edu = js.document.createElement('p')
+    Edu_span = js.document.createElement('span')
+    Edu_span.textContent = str(areaEducationAll)+" m²"
+    Edu_span.className = "Edu-span"
+    Edu.appendChild(js.document.createTextNode("Built Education Space: "))
+    Edu.appendChild(Edu_span)
+    Edu.className = "value-Edu-container"
+
+
+    #######################################
+
+    container = js.document.createElement('div')
+    container.className = "info-table-container"
+
+    container.appendChild(Popul)
+    container.appendChild(WorkPl)
+    container.appendChild(Living)
+    container.appendChild(Living_vol)
+    container.appendChild(Indus)
+    container.appendChild(Indus_Vol)
+    container.appendChild(Green)
+    container.appendChild(Offi)
+    container.appendChild(Offi_Vol)
+    container.appendChild(Edu)
+
+    body.appendChild(container)
 
 def Map1():
     global plane_map, geometrie,texture_Plane_Mesh_Mat 
@@ -584,30 +479,454 @@ def NoMap():
     plane_map = THREE.Mesh.new( geometrie,Plane_Mesh_Mat)
     plane_map.translateZ(-3)
     scene.add(plane_map)
+
+def Generate():
+    global light2, light, count_Mainstreet,count_Substreet,count_Usage, Input_Road_Coords_py,Boundary_Coords_py
+    scene.clear()
+    scene.add(light2, light)
+    scene.add(Reset_Mesh)
+    scene.add(Save_Mesh)
+    scene.add(light)
+    scene.add(light2)
+    scene.add(preview_Sphere)
+    scene.add( plane_map )
+
+####Generate Mainstreet
+    if input_param.MainStreets == True or count_Mainstreet < 1 and input_param.GenerateCity == True or count_Mainstreet < 1 and input_param.SecondaryStreets == True or count_Mainstreet < 1 and input_param.AssignUsage == True:
+        inputForSecondaryStreets = generateMainStreets(Boundary_Coords_py, Input_Road_Coords_py)
+        count_Mainstreet += 1
+####Generate Substreet
+    if input_param.SecondaryStreets == True or count_Substreet < 1 and input_param.GenerateCity == True or count_Substreet < 1 and input_param.SecondaryStreets == True or count_Substreet < 1 and input_param.AssignUsage == True:
+        untranslatedSubplotsAsList, translatedAndAllignedSubPlots = generateSecondaryStreets(inputForSecondaryStreets)
+        count_Substreet += 1
+####Assign Usage
+    if input_param.AssignUsage == True or count_Usage < 1 and input_param.GenerateCity == True:
+        generatePlotsAndAssign(untranslatedSubplotsAsList, translatedAndAllignedSubPlots)
+        count_Usage += 1
+### Generate City    
+    if input_param.GenerateCity == True:
+        global meshesfinal_listL, linesfinal_listL
+        generateL ()
+        global meshfinal_list2, linefinal_list2, meshplaneI
+        generateI()
+        global meshO_list2, lineO_list2
+        generateO()
+        generateG()
+        generateE()
+        Info_Table()
     
+def regenerateAll():
+    global light2, light
+    scene.clear()
+    scene.add(light2, light)
+    scene.add(Reset_Mesh)
+    scene.add(Save_Mesh)
+    scene.add(light)
+    scene.add(light2)
+    scene.add(preview_Sphere)
+    scene.add( plane_map )
+    inputForSecondaryStreets = generateMainStreets(Boundary_Coords_py, Input_Road_Coords_py)
+    untranslatedSubplotsAsList, translatedAndAllignedSubPlots = generateSecondaryStreets(inputForSecondaryStreets)
+    generatePlotsAndAssign(untranslatedSubplotsAsList, translatedAndAllignedSubPlots)
+    
+    global meshesfinal_listL, linesfinal_listL
+    generateL ()
+    global meshfinal_list2, linefinal_list2, meshplaneI
+    generateI()
+    global meshO_list2, lineO_list2
+    generateO()
+    generateG() 
+    generateE()
+    
+    Info_Table()
+    
+
+    
+    planeGeometry = THREE.PlaneGeometry.new( 2000, 2000, 32, 32 )
+    color = THREE.Color.new("rgb(200,200,200)")
+    planeMaterial = THREE.ShadowMaterial.new()
+    planeMaterial.color = color
+    
+    plane = THREE.Mesh.new( planeGeometry, planeMaterial )
+    
+    plane.translateZ(-2)
+    plane.transparent = True 
+    plane.opacity = 0
+    plane.receiveShadow = True
+    
+    scene.add(plane) 
+
+def generateMainStreets(BaseShapePoints,InputLineLines):     #Function that handles Main Street generation
+        
+        print("InputLineLines", InputLineLines)
+        BaseShapeLines= generateLinesNum(BaseShapePoints)
+        print("BaseShapeLines",BaseShapeLines )
+        
+        randomInputLines = InputLineLines.copy()
+        random.shuffle(randomInputLines)        #Shuffles order of inputlines so that generated streets have potential to be different every time
+
+        mainStreetNetwork = mainStreetGenerator(BaseShapeLines,randomInputLines)
+    
+        for i in BaseShapeLines:                            #Append BaseShapeLines to list of generated Streets
+            mainStreetNetwork.append(i)
+    
+        splitMainStreetNetwork = splitMultipleLines(mainStreetNetwork)   #Split List of Streets and Baseshape into lines useable by loopfinder
+
+        splitMainStreetNetworkAsList = []
+        splitMainStreetNetworkAsListRounded = []
+        for i in splitMainStreetNetwork:
+            tempList = [i[0].tolist(),i[1].tolist()]
+            splitMainStreetNetworkAsList.append(tempList)
+            tempList = []
+
+        for i in splitMainStreetNetworkAsList:  #Round all Points in Line-Network to 8 digits after comma so small rounding errors of the linesplitter get mitigated
+            for j in i:
+                temptemplist = [round(j[0],8),round(j[1],8)]
+                tempList.append(temptemplist)
+            splitMainStreetNetworkAsListRounded.append(tempList)
+            tempList = []
+    
+        inputForSecondaryStreets = loop_finder(splitMainStreetNetworkAsListRounded)    #Find the Loops (Plots) out of the generated street-network
+        return inputForSecondaryStreets
+
+def generateSecondaryStreets(inputForSecondaryStreets):     #Function that handles Secondary street generation
+
+    subPlotsAsNP = []
+    for i in inputForSecondaryStreets:
+        tempSubPlot = []
+        for j in i:
+            tempSubPlot.append(np.array([j[0],j[1]]))       #Transforms Plotslist back to numpy-arrays
+        subPlotsAsNP.append(tempSubPlot)
    
+
+    offsettedSubplotsAsNP = []
+    for i in subPlotsAsNP:
+        currentOffset = offsetNpPoly(i,4)       #Offset of main streets, the number in brackets is half the extra distance of the main streets!
+        offsettedSubplotsAsNP.append(currentOffset)
+
+    oldSubPlots = []
+    for i in offsettedSubplotsAsNP:
+        oldSubPlots.append(polygonDivider(i,600,3000,1,True, i))   #The actual "Secondary Street Generator"
     
+
+
+    subPlots = addEveryPointToEveryPoly(oldSubPlots)
+
+
+
+    untranslatedSubplots = []
+    for i in range(len(oldSubPlots)):
+        for k in oldSubPlots[i]:
+            untranslatedSubplots.append(k)         #DO NOT USE, BUGGY, IDK WHY
+
+    untranslatedSubplotsAsList = []
+
+    for h in untranslatedSubplots:
+        currentPoly = []
+        for o in h:
+            currentPoly.append(o.tolist())
+        untranslatedSubplotsAsList.append(currentPoly) #USE THIS INSTEAD! TRANSLATE BACK FROM LIST IF NESSESARY!
+           
+    
+    translatedAndAllignedSubPlots = translatePointsOnOffset(subPlotsAsNP,offsettedSubplotsAsNP,subPlots)     #Translate points of offsetted polygons and insert points of other polygons for neighborfinder
+    
+    translatedAndAllignedSubPlotsAsList = []
+    for h in translatedAndAllignedSubPlots:
+        currentPoly = []
+        for o in h:
+            currentPoly.append(o.tolist())
+        translatedAndAllignedSubPlotsAsList.append(currentPoly)
+
+    visualizeNormalPlots(untranslatedSubplotsAsList)
+
+    return untranslatedSubplotsAsList, translatedAndAllignedSubPlotsAsList
+
+def sortPointsByDistance(points, start_point):
+    distances = [np.linalg.norm(point - start_point) for point in points]
+    points_and_distances = list(zip(points, distances))
+    sorted_points_and_distances = sorted(points_and_distances, key=lambda x: x[1])
+    return [point for point, distance in sorted_points_and_distances]
+
+def translatePointsOfPoly(oldPolyAsPoints,offsetPolyAsPoints,listOfPolysInoffsettedAsPtsOld):
+    oldPolyAsLinesUE = []
+    offsetPolyAsLinesUE = []
+
+    def angle_between(v1, v2):
+        v1_u = v1 / np.linalg.norm(v1)
+        v2_u = v2 / np.linalg.norm(v2)
+        return np.degrees(np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))).round(1)
+
+    def kickWrongLineFromPoly(newPolyLinesUE,oldPolyLinesUE):
+        oldPolyLines = oldPolyLinesUE.copy()
+        newPolyLines = newPolyLinesUE.copy()
+        for i in range(len(oldPolyLines)):
+            if i > len(newPolyLines)-1:
+                oldPolyAsLines.pop(i)
+                break
+            oldVec = oldPolyLines[i][1]-oldPolyLines[i][0]
+            newVec = newPolyLines[i][1]-newPolyLines[i][0]
+            if angle_between(oldVec,newVec) != 0:
+                oldPolyLines.pop(i)
+                break
+        if len(oldPolyLines) > len(newPolyLines):
+            return kickWrongLineFromPoly(newPolyLines,oldPolyLines)
+            
+        return newPolyLines, oldPolyLines
+
+    
+    for i in range(len(oldPolyAsPoints)):      #Make Old poly as points to lines
+        if i < len(oldPolyAsPoints)-1:
+            CurrentLine = [oldPolyAsPoints[i], oldPolyAsPoints[i+1]]
+            oldPolyAsLinesUE.append(CurrentLine)
+        else:
+            CurrentLine = [oldPolyAsPoints[i], oldPolyAsPoints[i-(len(oldPolyAsPoints)-1)]]
+            oldPolyAsLinesUE.append(CurrentLine)
+
+    for i in range(len(offsetPolyAsPoints)):    #Make offsetted poly as points to lines
+        if i < len(offsetPolyAsPoints)-1:
+            CurrentLine = [offsetPolyAsPoints[i], offsetPolyAsPoints[i+1]]
+            offsetPolyAsLinesUE.append(CurrentLine)
+        else:
+            CurrentLine = [offsetPolyAsPoints[i], offsetPolyAsPoints[i-(len(offsetPolyAsPoints)-1)]]
+            offsetPolyAsLinesUE.append(CurrentLine)
+
+    if len(oldPolyAsPoints) > len(offsetPolyAsPoints):
+        offsetPolyAsLines, oldPolyAsLines = kickWrongLineFromPoly(offsetPolyAsLinesUE,oldPolyAsLinesUE)
+    else:
+        offsetPolyAsLines = offsetPolyAsLinesUE.copy()
+        oldPolyAsLines = oldPolyAsLinesUE.copy()
+
+
+    listOfPolysInoffsettedAsPts = []
+    for i in  listOfPolysInoffsettedAsPtsOld:
+        listOfPolysInoffsettedAsPts.append(i)
+   
+    allPolyPoints = []
+    for i in listOfPolysInoffsettedAsPts:
+        for j in i:
+            #print("J",j)
+            if any(np.array_equal(j.round(6), allPolyPoints[o].round(6)) for o in range(len(allPolyPoints))):
+                continue
+            else:
+                allPolyPoints.append(j)
+
+    #print("allpolypoints",allPolyPoints)
+    pointsOnNewPoly = []
+    pointsOnOldPoly = []
+    for i in range(len(oldPolyAsLines)):
+        vecOld = (oldPolyAsLines[i][1]-oldPolyAsLines[i][0])
+        lenNew= np.linalg.norm(offsetPolyAsLines[i][1]-offsetPolyAsLines[i][0])
+        for j in allPolyPoints:
+            if np.all(j.round(6) == offsetPolyAsLines[i][0].round(6)): #If startpoint is same, just continue, otherwise point is gonna be doubled in the final list
+                continue
+            elif pointOnLineSegment(j,offsetPolyAsLines[i]):
+                pointsOnNewPoly.append(j)
+                lenCurrentLine = np.linalg.norm(j-offsetPolyAsLines[i][0])
+                relationshipOnOffset = lenCurrentLine/lenNew
+                newPt = oldPolyAsLines[i][0] + vecOld*relationshipOnOffset.round(6)
+                pointsOnOldPoly.append(newPt)
+                
+    if len(pointsOnOldPoly) >= 1:
+        for k in range(len(pointsOnNewPoly)):
+            for j in range(len(listOfPolysInoffsettedAsPts)):
+                if any(np.array_equal(pointsOnNewPoly[k].round(6), listOfPolysInoffsettedAsPts[j][o].round(6)) for o in range(len(listOfPolysInoffsettedAsPts[j]))):
+                    index = arrayIndex(listOfPolysInoffsettedAsPts[j],pointsOnNewPoly[k])
+                    del listOfPolysInoffsettedAsPts[j][index]
+                    
+                    listOfPolysInoffsettedAsPts[j].insert(index, pointsOnOldPoly[k])
+                    
+    return listOfPolysInoffsettedAsPts
+
+def translatePointsOnOffset(oldPolygonsAsPoints,offsetPolygonsAsPoints,subPlotsInOffsettedPolygonsAsPoints):
+    translatedSubplots = []
+    
+    
+    for i in range(len(offsetPolygonsAsPoints)):
+        currentTranslatedSubplots = translatePointsOfPoly(oldPolygonsAsPoints[i],offsetPolygonsAsPoints[i],subPlotsInOffsettedPolygonsAsPoints[i])
+        for j in currentTranslatedSubplots:
+            translatedSubplots.append(j)
+        
+    print("translatedSubplots", translatedSubplots)
+
+    
+    allSubplotPoints = []       #List of unique points present in translated subplots
+    for i in translatedSubplots:
+        for j in i:
+            #print("J",j)
+            if any(np.array_equal(j.round(6), allSubplotPoints[o].round(6)) for o in range(len(allSubplotPoints))):
+                continue
+            else:
+                allSubplotPoints.append(j)
+
+    allNewSubplots = []
+    for k in translatedSubplots:
+        currentNewSubplot = []
+        for i in range(len(k)):      #Test for every single line
+            if i < len(k)-1:
+                currentSubplotLine = [k[i], k[i+1]] 
+            else:
+                currentSubplotLine = [k[i], k[i-(len(k)-1)]]
+            currentNewSubplot.append(k[i])      #append first point of currently viewed line to new plot
+            pointsOnCurrentLine = []
+            for j in allSubplotPoints:
+                if (j[0] <= max(currentSubplotLine[0][0], currentSubplotLine[1][0]) + 1e-3 and j[0] >= min(currentSubplotLine[0][0], currentSubplotLine[1][0]) - 1e-3 and j[1] <= max(currentSubplotLine[0][1], currentSubplotLine[1][1]) + 1e-3 and j[1] >= min(currentSubplotLine[0][1], currentSubplotLine[1][1]) - 1e-3):
+                    if np.all(j.round(6) == currentSubplotLine[0].round(6)) == False and np.all(j.round(6) == currentSubplotLine[1].round(6)) == False:
+                        if pointOnLineSegment(j,currentSubplotLine):
+                            pointsOnCurrentLine.append(j)
+            if len(pointsOnCurrentLine) == 0:
+                continue
+            elif len(pointsOnCurrentLine) == 1:
+                if any(np.array_equal(pointsOnCurrentLine[0].round(6), currentNewSubplot[o].round(6)) for o in range(len(currentNewSubplot))):
+                    continue
+                else:
+                    currentNewSubplot.append(pointsOnCurrentLine[0])
+                    continue
+            else:
+                sortedPointsOnLine = sortPointsByDistance(pointsOnCurrentLine,k[i])
+                for h in sortedPointsOnLine:
+                    if any(np.array_equal(h, currentNewSubplot[o].round(6)) for o in range(len(currentNewSubplot))):
+                        continue
+                    else:
+                        currentNewSubplot.append(h)
+
+        allNewSubplots.append(currentNewSubplot)
+    
+    print("NEWTRANSLATEDPLOTS",allNewSubplots)
+    
+        
+    return allNewSubplots
+
+def addEveryPointToEveryPoly(polygons):
+    allSubplotPoints = []       #List of unique points present in translated subplots
+    for i in polygons:
+        for j in i:
+            for t in j:
+                if any(np.array_equal(t.round(6), allSubplotPoints[o].round(6)) for o in range(len(allSubplotPoints))):
+                    continue
+                else:
+                    allSubplotPoints.append(t)
+
+    allNewSubplots = []
+    for k in polygons:
+        currentBigSubplot = []
+        for p in k:
+            currentNewSubplot = []
+            for i in range(len(p)):      #Test for every single line
+                if i < len(p)-1:
+                    currentSubplotLine = [p[i], p[i+1]] 
+                else:
+                    currentSubplotLine = [p[i], p[i-(len(p)-1)]]
+                currentNewSubplot.append(p[i])      #append first point of currently viewed line to new plot
+                pointsOnCurrentLine = []
+                for j in allSubplotPoints:
+                    
+                    if (j[0] <= max(currentSubplotLine[0][0], currentSubplotLine[1][0]) + 1e-3 and j[0] >= min(currentSubplotLine[0][0], currentSubplotLine[1][0]) - 1e-3 and j[1] <= max(currentSubplotLine[0][1], currentSubplotLine[1][1]) + 1e-3 and j[1] >= min(currentSubplotLine[0][1], currentSubplotLine[1][1]) - 1e-3):
+                        if np.all(j.round(6) == currentSubplotLine[0].round(6)) == False and np.all(j.round(6) == currentSubplotLine[1].round(6)) == False:
+                            if pointOnLineSegment(j,currentSubplotLine):
+                                pointsOnCurrentLine.append(j)
+                if len(pointsOnCurrentLine) == 0:
+                    continue
+                elif len(pointsOnCurrentLine) == 1:
+                    if any(np.array_equal(pointsOnCurrentLine[0].round(6), currentNewSubplot[o].round(6)) for o in range(len(currentNewSubplot))):
+                        continue
+                    else:
+                        currentNewSubplot.append(pointsOnCurrentLine[0])
+                        continue
+                else:
+                    sortedPointsOnLine = sortPointsByDistance(pointsOnCurrentLine,p[i])
+                    for h in sortedPointsOnLine:
+                        if any(np.array_equal(h, currentNewSubplot[o].round(6)) for o in range(len(currentNewSubplot))):
+                            continue
+                        else:
+                            currentNewSubplot.append(h)
+
+            currentBigSubplot.append(currentNewSubplot)
+        allNewSubplots.append(currentBigSubplot)
+    return allNewSubplots
+
+def visualizeNormalPlots(plotsaslist):
+
+    dividedplotsaslines = []
+    for x in plotsaslist:
+        tempplotasline = []
+        for i in range(len(x)):
+            if i < len(x)-1:
+                CurrentLine = [x[i], x[i+1]]
+                tempplotasline.append(CurrentLine)
+            else:
+                CurrentLine = [x[i], x[i-(len(x)-1)]]
+                tempplotasline.append(CurrentLine)
+        dividedplotsaslines.append(tempplotasline)
+    
+    ThreeLinesStreet = []
+    ThreeCurrentLine = []
+    for x in dividedplotsaslines:
+            singlePlot = []
+            for i in x:
+                for j in i:
+                
+                    ThreeVec1 = THREE.Vector2.new(j[0],j[1])
+                    ThreeCurrentLine.append(ThreeVec1)
+                singlePlot.append(ThreeCurrentLine)
+                ThreeCurrentLine = []
+            ThreeLinesStreet.append (singlePlot)
+            singlePlot = []
+
+    draw_system_streets(ThreeLinesStreet) 
+
+def generatePlotsAndAssign(normalplots, translatedplots):
+    global INPUT_LINES, PLOTS, toplots, NEIGHBOURS
+    #INPUT_LINES = [[(int(point[0]), int(point[1])) for point in line] for line in lines]
+    ##########################################################################################
+    
+    PLOTS= normalplots
+    print("PLOTS", PLOTS)
+    NEIGHBOURPLOTS = translatedplots
+    print("normalplots",normalplots)
+    print("translatedplots", translatedplots)
+    #print("Plots:",PLOTS)
+    ##########################################################################################
+    toplots = [[tuple(x) for x in sublist] for sublist in NEIGHBOURPLOTS]#Convert in Tuples
+    NEIGHBOURS = find_overlapping_plots(toplots)
+    #print("Neighbours:",NEIGHBOURS)
+    ##########################################################################################
+    global DICTIONARY
+    DICTIONARY = convert_data(NEIGHBOURS)
+    
+    DISTRIBUTION=find_solution(DICTIONARY)
+    # POSSIBLE_CHANGES=random_distribution(DICTIONARY)
+    
+    colorPlots()
+    print ("Distribution",DISTRIBUTION)
+    print("Dictionary", DICTIONARY)
+
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-#CLASS AND GENERATE MAIN DICTIONARY
+# CLASS AND GENERATE MAIN DICTIONARY
 global plotInformation
 
 class plotInformation:
-    def __init__(self, name, outerboundary, plotarea, neighbour, possibleChanges, floors, areatype):
+    def __init__(self, name, outerboundary, plotarea, neighbour, floors, areatype):
         self.name = name
         self.outerboundary = outerboundary
         self.newouterboundary = 0
         self.offsetvalue = 0
         self.plotarea = plotarea
         self.neighbour = neighbour
-        self.possibleChanges = possibleChanges
         self.floors = floors
         self.areatype = areatype
+        self.areatyppopul = 0
+        self.currentAreaPopul = 0
         self.currentArea = 0
+        self.maxbuiltarea = 0
+        
     
     def get_area(self):
         return self.plotarea
+    
+    def get_max_builtarea(self):
+        self.maxbuiltarea = self.plotarea * input_param.density
+        return self.maxbuiltarea
     
     def get_outerboundary(self):
         return self.outerboundary
@@ -621,8 +940,15 @@ class plotInformation:
     def get_floors(self):
         return self.floors
     
-    def returncurrent(self):
+    def get_current_areaPopul(self):
+        return self.currentAreaPopul
+    
+    
+    def get_current_area(self):
         return self.currentArea
+    
+    def get_area_typePopul(self):
+        return self.areatyppopul
     
     def get_area_type(self):
         return self.areatype
@@ -631,40 +957,82 @@ class plotInformation:
         self.areatype = typus 
         
         if typus == 1:
-            self.currentArea,  self.newouterboundary, self.offsetvalue  = calc_R(self.outerboundary)
-            self.currentArea =  self.plotarea
+            self.currentArea,  self.newouterboundary, self.offsetvalue  = calcR(self.outerboundary)
+            self.currentArea =  self.currentArea
         elif typus == 2: 
-            self.currentArea,  self.newouterboundary, self.offsetvalue  = calc_R(self.outerboundary)
-            self.currentArea = self.plotarea *2
+            self.currentArea,  self.newouterboundary, self.offsetvalue  = calcR(self.outerboundary)
+            self.currentArea = self.currentArea *2
         elif typus == 3: 
-            self.currentArea,  self.newouterboundary, self.offsetvalue  = calc_B(self.outerboundary)
+            self.currentArea,  self.newouterboundary, self.offsetvalue  = calcB(self.outerboundary)
             self.currentArea = self.currentArea *3
         elif typus == 4: 
-            self.currentArea,  self.newouterboundary, self.offsetvalue = calc_B(self.outerboundary)
+            self.currentArea,  self.newouterboundary, self.offsetvalue = calcB(self.outerboundary)
             self.currentArea = self.currentArea *4
         elif typus == 5: 
-            self.currentArea,  self.newouterboundary, self.offsetvalue  =  calc_B(self.outerboundary)
+            self.currentArea,  self.newouterboundary, self.offsetvalue  =  calcB(self.outerboundary)
             self.currentArea = self.currentArea *5 
         elif typus == 6: 
-            self.currentArea,  self.newouterboundary, self.offsetvalue  = calc_B(self.outerboundary)
+            self.currentArea,  self.newouterboundary, self.offsetvalue  = calcB(self.outerboundary)
             self.currentArea = self.currentArea *6
         elif typus == 7: 
-            self.currentArea,  self.newouterboundary, self.offsetvalue  = calc_H(self.outerboundary)
-            self.currentArea = self.plotarea *7
+            self.currentArea,  self.newouterboundary, self.offsetvalue  = calcH(self.outerboundary)
+            self.currentArea = self.currentArea *7
         elif typus == 8: 
-            self.currentArea,  self.newouterboundary, self.offsetvalue  = calc_H(self.outerboundary)
-            self.currentArea = self.plotarea *8
+            self.currentArea,  self.newouterboundary, self.offsetvalue  = calcH(self.outerboundary)
+            self.currentArea = self.currentArea *8
         elif typus == 9: 
-            self.currentArea,  self.newouterboundary, self.offsetvalue  = calc_H(self.outerboundary)
-            self.currentArea = self.plotarea *9
+            self.currentArea,  self.newouterboundary, self.offsetvalue  = calcH(self.outerboundary)
+            self.currentArea = self.currentArea *9
         elif typus == 10: 
-            self.currentArea,  self.newouterboundary, self.offsetvalue  = calc_H(self.outerboundary)
-            self.currentArea = self.plotarea *10
+            self.currentArea,  self.newouterboundary, self.offsetvalue  = calcH(self.outerboundary)
+            self.currentArea = self.currentArea *10
 
     
         return self.currentArea
+    
+    def get_currentarea_setpopul(self, typus):
+        self.areatyppopul = typus 
+        
+        if typus == 1:
+            self.currentAreaPopul,  self.newouterboundary, self.offsetvalue  = calcR(self.outerboundary)
+            self.currentAreaPopul =  self.currentAreaPopul
+        elif typus == 2: 
+            self.currentAreaPopul,  self.newouterboundary, self.offsetvalue  = calcR(self.outerboundary)
+            self.currentAreaPopul = self.currentAreaPopul *2
+        elif typus == 3: 
+            self.currentAreaPopul,  self.newouterboundary, self.offsetvalue  = calcB(self.outerboundary)
+            self.currentAreaPopul = self.currentAreaPopul *3
+        elif typus == 4: 
+            self.currentAreaPopul,  self.newouterboundary, self.offsetvalue = calcB(self.outerboundary)
+            self.currentAreaPopul = self.currentAreaPopul *4
+        elif typus == 5: 
+            self.currentAreaPopul,  self.newouterboundary, self.offsetvalue  =  calcB(self.outerboundary)
+            self.currentAreaPopul = self.currentAreaPopul *5 
+        elif typus == 6: 
+            self.currentAreaPopul,  self.newouterboundary, self.offsetvalue  = calcB(self.outerboundary)
+            self.currentAreaPopul = self.currentAreaPopul *6
+        elif typus == 7: 
+            self.currentAreaPopul,  self.newouterboundary, self.offsetvalue  = calcH(self.outerboundary)
+            self.currentAreaPopul = self.currentAreaPopul *7
+        elif typus == 8: 
+            self.currentArea,  self.newouterboundary, self.offsetvalue  = calcH(self.outerboundary)
+            self.currentAreaPopul = self.currentAreaPopul *8
+        elif typus == 9: 
+            self.currentArea,  self.newouterboundary, self.offsetvalue  = calcH(self.outerboundary)
+            self.currentAreaPopul = self.currentAreaPopul *9
+        elif typus == 10: 
+            self.currentAreaPopul,  self.newouterboundary, self.offsetvalue  = calcH(self.outerboundary)
+            self.currentAreaPopul = self.currentAreaPopul *10
 
-def sortedDictPlotAreas (Dict_R, Plotsnumpyn, DictPossibleChanges):
+    
+        return self.currentAreaPopul
+
+    def calc_max_area(self):
+        maxarea,  newouterboundary, offsetvalue  = calcH(self.outerboundary)
+        maxarea = self.plotarea *10
+        return maxarea
+            
+def sortedDictPlotAreas (Dict_R, Plotsnumpyn):
     
     plotinfo = {} 
     for i in Dict_R.keys():
@@ -675,11 +1043,10 @@ def sortedDictPlotAreas (Dict_R, Plotsnumpyn, DictPossibleChanges):
             #return offsetet area of each plot and original boundaries 
             
             calc_area = calc_plotArea(Boundary)
-            # print("check_area", calc_area)
-            # total area all plots with this value 
+             
 
             #generate new dictionary with all the informations with the right value 
-            plot = plotInformation(i, Boundary, calc_area, Dict_R[i]['neighbours'], DictPossibleChanges[1][i], 0, 0)
+            plot = plotInformation(i, Boundary, calc_area, Dict_R[i]['neighbours'], 0, 0)
             plotinfo[i] = {'Plotobject': plot}
     
 
@@ -702,7 +1069,7 @@ def colorPlots():
         if DICTIONARY[i]['value'] == "E":
             
             Boundary = PlotsNumpy[i]
-            G(Boundary, THREE.Color.new("rgb(214,182,148)") )
+            G(Boundary, THREE.Color.new("rgb(202,176,140)") )
         
         if DICTIONARY[i]['value'] == "L":
             
@@ -712,29 +1079,28 @@ def colorPlots():
         if DICTIONARY[i]['value'] == "O":
             
             Boundary = PlotsNumpy[i]
-            G(Boundary, THREE.Color.new("rgb(161,167,174)") )
+            G(Boundary, THREE.Color.new("rgb(161,173,173)") )
         
         if DICTIONARY[i]['value'] == "G":
             
             Boundary = PlotsNumpy[i]
-            G(Boundary, THREE.Color.new("rgb(194,204,185)") )
-    
-global scene 
+            G(Boundary, THREE.Color.new("rgb(138,158,134)") )
+
 def generateL ():
     global PlotsNumpy, dict_sorted, DICTIONARY, PLOTS
     PlotsNumpy = generateNumpyArray (PLOTS)
-    dict_sorted = sortedDictPlotAreas (DICTIONARY, PlotsNumpy, POSSIBLE_CHANGES )
+    dict_sorted = sortedDictPlotAreas (DICTIONARY, PlotsNumpy )
     
     global meshesfinal_listL, linesfinal_listL, groundsfinal, greenPG
-    meshesfinal_listL, linesfinal_listL, groundsfinal, greenPG = generateTypeL(dict_sorted, input_param.offsetR, input_param.offsetH, input_param.heightperfloorR, input_param.heightperfloorB, input_param.heightperfloorH, input_param.population, input_param.population_density)
+    meshesfinal_listL, linesfinal_listL, groundsfinal, greenPG = generateTypeL(dict_sorted, input_param.offsetR, input_param.offsetH, input_param.heightperfloorR, input_param.heightperfloorB, input_param.heightperfloorH, input_param.population, input_param.density)
 
 def generateI():
-    
-    global meshfinal_list2, linefinal_list2, meshplaneI
+    global meshfinal_list2, linefinal_list2, meshplaneI, areaIndustrials
     meshfinal_list2 = []
     linefinal_list2 = []
     meshplaneI = []
     
+    areaIndustrials = 0
     for i in DICTIONARY.keys():
         if DICTIONARY[i]['value'] == "I":
             #loop_check_angle(PLOTS)
@@ -742,59 +1108,82 @@ def generateI():
             Boundary = PlotsNumpy[i]
 
         
-            linesI, meshesI, planeI = offsetAndGenerateShapeI(Boundary,input_param.distancestreetI, THREE.Color.new("rgb(180,180,180)"), THREE.Color.new("rgb(150,150,150)"),  THREE.Color.new("rgb(150,150,150)"),1, input_param.heightperfloorI)
+            linesI, meshesI, planeI, areaplot = offsetAndGenerateShapeI(Boundary,input_param.distancestreetI, THREE.Color.new("rgb(180,180,180)"), THREE.Color.new("rgb(150,150,150)"),  THREE.Color.new("rgb(150,150,150)"),1, input_param.height)
+            
+            areaIndustrials += areaplot
             
             linefinal_list2.append(linesI)
             meshfinal_list2.append(meshesI)
             meshplaneI.append(planeI)
+    
+    return areaIndustrials
 
 def generateO():
-    
-    global meshO_list2, lineO_list2, meshplaneO
+    global meshO_list2, lineO_list2, workingpeople, areaOffices
     meshO_list2 = []
     lineO_list2 = []
-    meshplaneO = []
     
+    workingpeople = 0
+    areaOffices = 0
     for i in DICTIONARY.keys():
         if DICTIONARY[i]['value'] == "O":
             #loop_check_angle(PLOTS)
         
             Boundary = PlotsNumpy[i]
+         
+            linesO, meshesO, PeoplePerPlot, AreaperPlot = offsetAndGenerateShapeO(Boundary,THREE.Color.new("rgb(218,235,235)"), THREE.Color.new("rgb(161,173,173)"),  THREE.Color.new("rgb(161,173,173)"), input_param.heightperfloorO)
             
-            floors = randint(8,15)
-            
-            linesO, meshesO, planeO = offsetAndGenerateShapeO(Boundary,THREE.Color.new("rgb(200,205,210)"), THREE.Color.new("rgb(161,167,174)"),  THREE.Color.new("rgb(161,167,174)"),floors, input_param.heightperfloorO)
-            
+            print("workingpeople", workingpeople)
+            workingpeople += PeoplePerPlot
+            areaOffices += AreaperPlot
             lineO_list2.append(linesO)
             meshO_list2.append(meshesO)
-            meshplaneO.append(planeO)
+            # meshplaneO.append(planeO)
+    
+    print("workingpeople", workingpeople)
+    return workingpeople, AreaperPlot, areaOffices
 
 def generateG():
+    global areaGreenAll, maxpopulation, Greenareaperperson
+    areaGreenAll = 0
     for i in DICTIONARY.keys():
         if DICTIONARY[i]['value'] == "G":
             
             Boundary = PlotsNumpy[i]
             
-            G(Boundary, THREE.Color.new("rgb(194,204,185)") )
+            G(Boundary, THREE.Color.new("rgb(138,158,134)") )
+            areagreenplot = Area(Boundary)
+            areaGreenAll += areagreenplot
+    
+    if  maxpopulation > 0:
+        Greenareaperperson = areaGreenAll/maxpopulation
+    else:
+        Greenareaperperson = 0
+    
+    return areaGreenAll, Greenareaperperson
 
 def generateE():
+    global areaEducationAll
+    areaEducationAll = 0 
     for i in DICTIONARY.keys():
         if DICTIONARY[i]['value'] == "E":
  
             Boundary = PlotsNumpy[i]
-            E(Boundary, THREE.Color.new("rgb(226,207,186)"), THREE.Color.new("rgb(240,225,210)"),  THREE.Color.new("rgb(226,207,186)"), 1, 4)
-  
+            E(Boundary, THREE.Color.new("rgb(245,223,191)"), THREE.Color.new("rgb(202,176,140)"),  THREE.Color.new("rgb(202,176,140)"), 1, 4)
+            
+            areaEducation = Area(Boundary)
+            areaEducationAll += areaEducation
+            
+    return areaEducationAll
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-#UPDATE FUNCTIONS 
-
-
+# UPDATE FUNCTIONS 
 def updateI():
     
     global meshfinal_list2, linefinal_list2, meshplaneI, DICTIONARY, PlotsNumpy, scene
   
    
-    if input_param.oldheightperfloorI != input_param.heightperfloorI or input_param.distancestreetI != input_param.OlddistancestreetI:
+    if input_param.oldheight != input_param.height:
      
         for sub_list in linefinal_list2:
             for line in sub_list:
@@ -814,14 +1203,14 @@ def updateI():
 
         
         generateI()
+        Info_Table()
    
             
-    input_param.oldheightperfloorI = input_param.heightperfloorI
-    input_param.OlddistancestreetI = input_param.distancestreetI 
-
+    input_param.oldheight = input_param.height
+ 
 def updateO():
-    global meshO_list2, lineO_list2, meshplaneO, DICTIONARY, PlotsNumpy, scene
-    if input_param.oldheightperfloorO != input_param.heightperfloorO:
+    global meshO_list2, lineO_list2, DICTIONARY, PlotsNumpy, scene
+    if input_param.workingpeopleold != input_param.workplaces:
         # input_param.distancetostreetO != input_param.olddistancetostreetO
         
         for sub_list in lineO_list2:
@@ -832,24 +1221,26 @@ def updateO():
             for mesh in sublist2:
                 scene.remove(mesh)
         
-        for mesh in meshplaneO:
-            scene.remove(mesh)
+        # for mesh in meshplaneO:
+        #     scene.remove(mesh)
     
      
         meshO_list2 = []
         lineO_list2 = []
-        meshplaneO = []
+        # meshplaneO = []
         
         
         generateO()
+        Info_Table()
             
-    input_param.oldheightperfloorO = input_param.heightperfloorO
+    input_param.workingpeopleold = input_param.workplaces
 
 def updateL ():
   
-    global meshesfinal_listL, linesfinal_listL, greenPG,  groundsfinal, DICTIONARY, PlotsNumpy, POSSIBLE_CHANGES, scene
-    if input_param.populationold_density != input_param.population_density or input_param.iputOld != input_param.population:
-      
+    global meshesfinal_listL, linesfinal_listL, greenPG,  groundsfinal, DICTIONARY, PlotsNumpy, scene
+    if input_param.populationold_density != input_param.density or input_param.iputOld != input_param.population:
+        
+        
         for sub_list in linesfinal_listL:
             for line in sub_list:
                 scene.remove(line)    
@@ -857,9 +1248,9 @@ def updateL ():
         for sublist2 in meshesfinal_listL:
             for mesh in sublist2:
                 scene.remove(mesh)
-
-        for mesh in groundsfinal:
-            scene.remove(mesh)
+        print("groundsfinal", groundsfinal)
+        for i in range(len(groundsfinal)):
+            scene.remove(groundsfinal[i])
         
         for mesh in greenPG:
             scene.remove(mesh)
@@ -873,10 +1264,13 @@ def updateL ():
         
         
         generateL ()
+        Info_Table()
             
     input_param.iputOld = input_param.population
-    input_param.populationold_density = input_param.population_density
+    input_param.populationold_density = input_param.density
 
+
+#--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # CALCULATE FUNCTIONS
 def Area(corners):
 
@@ -896,40 +1290,93 @@ def calc_plotArea(arraypoints):
     areaOuterBoundary = Area(arraypoints)
     return areaOuterBoundary
 
-def calculatetype (dict_sorted, density ,population, maxType):
+def calcmaxpeople(dict_sorted):
     
-    choose_type = density
-    
+    choose_type = 0
     
     area_all = 0 
-    while choose_type < maxType:
+    while choose_type < 10:
         for i in dict_sorted.keys():
             currentArea = 0
-
-            if dict_sorted[i]['Plotobject'].get_area_type() != 0:
-                currentArea = dict_sorted[i]['Plotobject'].returncurrent()
             
+            if dict_sorted[i]['Plotobject'].get_area_typePopul() != 0:
+                currentArea = dict_sorted[i]['Plotobject'].get_current_areaPopul()
+            
+            max_built_area = dict_sorted[i]['Plotobject'].get_max_builtarea() 
+            
+            if currentArea >= max_built_area:
+                print("area_all", area_all) 
+                population_possible_max = area_all//30
+                return population_possible_max
+           
+            builtarea_per_plot = dict_sorted[i]['Plotobject'].get_currentarea_setpopul(choose_type)
+            
+            area_all = area_all - currentArea
+            area_all = area_all + builtarea_per_plot
+
+            
+        choose_type += 1
+        print("area_all", area_all) 
+        population_possible_max = area_all//30
+        #print("choose_type return 2", choose_type)   
+    return   population_possible_max
+
+def calculatetype(dict_sorted, density ,population, maxpopul):
+    
+    choose_type = 0
+    
+    area_all = 0 
+    while choose_type < 10:
+        for i in dict_sorted.keys():
+            currentArea = 0
+            
+            if dict_sorted[i]['Plotobject'].get_area_type() != 0:
+                currentArea = dict_sorted[i]['Plotobject'].get_current_area()
+            
+            max_built_area = dict_sorted[i]['Plotobject'].get_max_builtarea() 
+            
+            if currentArea >= max_built_area:
+                return area_all
+           
             builtarea_per_plot = dict_sorted[i]['Plotobject'].get_currentarea_oftype(choose_type)
-            #print ("churrentareaplot", builtarea_per_plot)
+            
             area_all = area_all - currentArea
             area_all = area_all + builtarea_per_plot
             population_possible = area_all//30
             #print("i",i, "area_all",area_all,"current_Area",currentArea, "population_possible", population_possible)
             
-            if population_possible >= population:
+            if population_possible >= maxpopul*input_param.population:
                 #print("choose_type return 1", choose_type)
-                return 
+                return area_all
         
         choose_type += 1
         #print("choose_type return 2", choose_type)   
-    return             
+    return area_all      
 
-def calc_B (arraypoints):
+def calcB (arraypoints):
 
     Xcoordinatesb, Ycoordinatesb = generatexy (arraypoints)
-    Xcoordinates, Ycoordinates = makeOffsetPoly(Xcoordinatesb,Ycoordinatesb, 5)
+    Xcoordinates5, Ycoordinates5 = makeOffsetPolyOuter(Xcoordinatesb,Ycoordinatesb, 4)
+    points_check = convert_into_Points(Xcoordinates5, Ycoordinates5)
+    if determine_loop_direction(points_check) == "Counterclockwise":
+        print( "changed value outer")
+        offsetvalueouter = 0
+        
+        Xcoordinates5= Xcoordinatesb
+        Ycoordinates5=Ycoordinatesb
+    
+    
 
-    OffsetX, OffsetY = makeOffsetPoly(Xcoordinates,Ycoordinates, 2)
+    OffsetX, OffsetY = makeOffsetPoly(Xcoordinates5,Ycoordinates5, 2)
+    points_check2 = convert_into_Points(OffsetX, OffsetY)
+    if determine_loop_direction(points_check2) == "Counterclockwise":
+        print( "changed value outer")
+        offsetvalueouter = 0
+
+        
+        OffsetX = Xcoordinates5
+        OffsetY = Ycoordinates5
+    
     newOuterboundary = convert_result_check_W(OffsetX, OffsetY)
     
     # print (("1:", OffsetX))
@@ -941,13 +1388,18 @@ def calc_B (arraypoints):
     #print("oldbound", min(boundarylengths))
     
     
-    offsetvalue = 3
+    if min(boundarylengths)<= 15:
+        
+        return(areaOuterBoundary, newOuterboundary,0)
+    
+    
+    offsetvalue = 2.5
     while min(boundarylengths) > 15:
         
         Oldoffset = offsetvalue
         #print("Oldoffset", Oldoffset)
 
-        offsetvalue += 1
+        offsetvalue += 0.5
         
         Offset2X, Offset2Y = makeOffsetPoly(OffsetX, OffsetY, offsetvalue)
         boundarylengths = lengthBoundary(Offset2X, Offset2Y)
@@ -956,9 +1408,7 @@ def calc_B (arraypoints):
         Points_2_check = convert_into_Points(Offset2X, Offset2Y)
     
         if min(Offset2X) == min(OffsetX) or determine_loop_direction(Points_2_check) == "Counterclockwise":
-            # print(determine_loop_direction(Points_2_check))
-            #print("Oldoffset2", Oldoffset)
-            
+           
             Offset2X, Offset2Y = makeOffsetPoly(OffsetX, OffsetY, Oldoffset)
             convertInnerBoundary = convert_result_check_W(Offset2X, Offset2Y)
             areaInnerBoundary = Area(convertInnerBoundary)
@@ -971,203 +1421,161 @@ def calc_B (arraypoints):
             areaInnerBoundary = Area(convertInnerBoundary)
             final_area = areaOuterBoundary - areaInnerBoundary
 
+    
+    final_area = areaOuterBoundary
     return (final_area, newOuterboundary,offsetvalue)
 
-def calc_R(arraypoints):
+def calcR(arraypoints):
     
+    outerboundArray = []
     Xcoordinatesb, Ycoordinatesb = generatexy (arraypoints)
-    Xcoordinates5, Ycoordinates5 = makeOffsetPoly(Xcoordinatesb,Ycoordinatesb, 5)
+    Xcoordinates5, Ycoordinates5 = makeOffsetPolyOuter(Xcoordinatesb,Ycoordinatesb, 4)
+    points_check = convert_into_Points(Xcoordinates5, Ycoordinates5)
     
-    newOuterboundary = convert_result_check_W(Xcoordinates5, Ycoordinates5)
-    #print("vorher")
-    dividedPoly = polygonDivider(newOuterboundary,200, 25000, 1, True,newOuterboundary)
-    #print("nachher")
+    if determine_loop_direction(points_check) == "Counterclockwise":
+        print( "changed value outer")
+        OffsetListdividedPoly = [0]
+        oldOuterboundary = convert_result_check_W(Xcoordinatesb,Ycoordinatesb)
+        oldAreaOuterBoundary = Area(oldOuterboundary)
+        outerboundArray.append(arraypoints)
+        print( "changed value outer")
+        return oldAreaOuterBoundary, outerboundArray, OffsetListdividedPoly
     
-    OffsetListdividedPoly = []
-    areaPlotfinal = []
     
-    finalArea = 0
-    for i in dividedPoly:
+    else:
+        newOuterboundary = convert_result_check_W(Xcoordinates5, Ycoordinates5)
+        dividedPoly = polygonDivider(newOuterboundary,10, 15000, 1, True,newOuterboundary)
         
-        offsetvalue = 0
-        areaPlotvalidR = Area(i)
-        Xcoordinatesb, Ycoordinatesb = generatexy (i)
-        #check distance of intersectes points and offsets plot if possible
-        boundarylengths = lengthBoundary(Xcoordinatesb, Ycoordinatesb)
-
-        while min(boundarylengths) > 15:  
+        OffsetListdividedPoly = []
+        areaPlotfinal = []
+        finalArea = 0
+        for i in dividedPoly:
             
-            Oldoffset = offsetvalue
+            offsetvalue = 0
+            areaPlotvalidR = Area(i)
+            Xcoordinatesb, Ycoordinatesb = generatexy (i)
+            #check distance of intersectes points and offsets plot if possible
+            boundarylengths = lengthBoundary(Xcoordinatesb, Ycoordinatesb)
+
+            while min(boundarylengths) > 10:  
                 
-            offsetvalue += 1
-            
-            OffsetX, OffsetY = makeOffsetPoly(Xcoordinatesb,Ycoordinatesb,offsetvalue)
-            boundarylengths = lengthBoundary(OffsetX, OffsetY)
-            #print("boundarylengths", min(boundarylengths))
-            
-            Points_2_check = convert_into_Points(OffsetX, OffsetY)
-            
-            if min(OffsetX) == min(Xcoordinatesb) or determine_loop_direction(Points_2_check) == "Counterclockwise":
+                Oldoffset = offsetvalue
+                    
+                offsetvalue += 1
                 
-                OffsetX, OffsetY = makeOffsetPoly(Xcoordinatesb, Ycoordinatesb, Oldoffset)
-                convertInnerBoundary = convert_result_check_W( OffsetX, OffsetY)
-                areaPlotvalidR = Area(convertInnerBoundary)
-                #print("Oldoffset", Oldoffset)
-                offsetvalue = Oldoffset
-                break 
-        #print("offsetvalue", offsetvalue)
+                OffsetX, OffsetY = makeOffsetPoly(Xcoordinatesb,Ycoordinatesb,offsetvalue)
+                boundarylengths = lengthBoundary(OffsetX, OffsetY)
+                #print("boundarylengths", min(boundarylengths))
+                
+                Points_2_check = convert_into_Points(OffsetX, OffsetY)
+                
+                if min(OffsetX) == min(Xcoordinatesb) or determine_loop_direction(Points_2_check) == "Counterclockwise":
+                    
+                    OffsetX, OffsetY = makeOffsetPoly(Xcoordinatesb, Ycoordinatesb, Oldoffset)
+                    convertInnerBoundary = convert_result_check_W( OffsetX, OffsetY)
+                    areaPlotvalidR = Area(convertInnerBoundary)
+                    #print("Oldoffset", Oldoffset)
+                    offsetvalue = Oldoffset
+                    break 
+            #print("offsetvalue", offsetvalue)
 
-            else: 
-                convertInnerBoundary = convert_result_check_W(OffsetX, OffsetY)
-                areaPlotvalidR = Area(convertInnerBoundary)
+                else: 
+                    convertInnerBoundary = convert_result_check_W(OffsetX, OffsetY)
+                    areaPlotvalidR = Area(convertInnerBoundary)
 
-        areaPlotfinal.append(areaPlotvalidR)
-        OffsetListdividedPoly.append(offsetvalue)
+            areaPlotfinal.append(areaPlotvalidR)
+            OffsetListdividedPoly.append(offsetvalue)
 
-    areaR = 0
-    for area in areaPlotfinal:
-        areaR += area
+        areaR = 0
+        for area in areaPlotfinal:
+            areaR += area
+        
+        #print("areaR", areaR)
+        return areaR, dividedPoly, OffsetListdividedPoly
+
+def calcH(arraypoints):
     
-    #print("areaR", areaR)
-    return areaR, dividedPoly, OffsetListdividedPoly
-
-def calc_H(arraypoints):
     
+    outerboundArray = []
     Xcoordinatesb, Ycoordinatesb = generatexy (arraypoints)
-    Xcoordinates5, Ycoordinates5 = makeOffsetPoly(Xcoordinatesb,Ycoordinatesb, 5)
+    Xcoordinates5, Ycoordinates5 = makeOffsetPolyOuter(Xcoordinatesb,Ycoordinatesb, 4)
+    points_check = convert_into_Points(Xcoordinates5, Ycoordinates5)
     
-    newOuterboundary = convert_result_check_W(Xcoordinates5, Ycoordinates5)
-    #print("vorher")
-    dividedPoly = polygonDivider(newOuterboundary,200, 25000, 1, True,newOuterboundary)
-    #print("nachher")
+    if determine_loop_direction(points_check) == "Counterclockwise":
+        OffsetListdividedPoly = [0]
+        oldOuterboundary = convert_result_check_W(Xcoordinatesb,Ycoordinatesb)
+        oldAreaOuterBoundary = Area(oldOuterboundary)
+        outerboundArray.append(arraypoints)
+        print( "changed value outer")
+        return oldAreaOuterBoundary, outerboundArray, OffsetListdividedPoly
     
-    OffsetListdividedPoly = []
-    areaPlotfinal = []
-    
-    finalArea = 0
-    for i in dividedPoly:
+    else:
+        newOuterboundary = convert_result_check_W(Xcoordinates5, Ycoordinates5)
+        print("vorher")
+        dividedPoly = polygonDivider(newOuterboundary,100, 25000, 1, True,newOuterboundary)
+        print("nachher")
         
-        offsetvalue = 0
-        areaPlotvalidR = Area(i)
-        Xcoordinatesb, Ycoordinatesb = generatexy (i)
-        #check distance of intersectes points and offsets plot if possible
-        boundarylengths = lengthBoundary(Xcoordinatesb, Ycoordinatesb)
-
-        while min(boundarylengths) > 25:  
+        OffsetListdividedPoly = []
+        areaPlotfinal = []
+        
+        finalArea = 0
+        for i in dividedPoly:
             
-            Oldoffset = offsetvalue
+            offsetvalue = 0
+            areaPlotvalidR = Area(i)
+            Xcoordinatesb, Ycoordinatesb = generatexy (i)
+            #check distance of intersectes points and offsets plot if possible
+            boundarylengths = lengthBoundary(Xcoordinatesb, Ycoordinatesb)
+
+            while min(boundarylengths) > 10:  
                 
-            offsetvalue += 1
-            
-            OffsetX, OffsetY = makeOffsetPoly(Xcoordinatesb,Ycoordinatesb,offsetvalue)
-            boundarylengths = lengthBoundary(OffsetX, OffsetY)
-            #print("boundarylengths", min(boundarylengths))
-            
-            Points_2_check = convert_into_Points(OffsetX, OffsetY)
-            
-            if min(OffsetX) == min(Xcoordinatesb) or determine_loop_direction(Points_2_check) == "Counterclockwise":
+                Oldoffset = offsetvalue
+                    
+                offsetvalue += 1
                 
-                OffsetX, OffsetY = makeOffsetPoly(Xcoordinatesb, Ycoordinatesb, Oldoffset)
-                convertInnerBoundary = convert_result_check_W( OffsetX, OffsetY)
-                areaPlotvalidR = Area(convertInnerBoundary)
-                #print("Oldoffset", Oldoffset)
-                offsetvalue = Oldoffset
-                break 
-        #print("offsetvalue", offsetvalue)
-
-            else: 
-                convertInnerBoundary = convert_result_check_W(OffsetX, OffsetY)
-                areaPlotvalidR = Area(convertInnerBoundary)
-
-        areaPlotfinal.append(areaPlotvalidR)
-        OffsetListdividedPoly.append(offsetvalue)
-
-    areaR = 0
-    for area in areaPlotfinal:
-        areaR += area
-    
-    #print("areaR", areaR)
-    return areaR, dividedPoly, OffsetListdividedPoly
-    
-def calculateFloors (area_all, dict_sorted, max_floors,population):
-    
-    population_possibleB = area_all//30 
-    if population_possibleB >= population:
-        #Blockpermiterdevelopment
-        number_of_floors = 1 
-        for i in dict_sorted.keys():
-            dict_sorted[i]['Plotobject'].set_floors(number_of_floors)
-            
-    
-    else: 
-        area_all = 0 
-        for i in dict_sorted.keys():
-
-            countFloors = 0
-            one_floor = dict_sorted[i]['Plotobject'].get_area()
-            # print ("one_floor", one_floor, i)
-            
-            population_possibleB = area_all//30 
-            
-            while population_possibleB < population and countFloors < max_floors:
+                OffsetX, OffsetY = makeOffsetPoly(Xcoordinatesb,Ycoordinatesb,offsetvalue)
+                boundarylengths = lengthBoundary(OffsetX, OffsetY)
+                #print("boundarylengths", min(boundarylengths))
                 
-                area_all += one_floor
-                countFloors += 1
+                Points_2_check = convert_into_Points(OffsetX, OffsetY)
+                
+                if min(OffsetX) == min(Xcoordinatesb) or determine_loop_direction(Points_2_check) == "Counterclockwise":
+                    
+                    OffsetX, OffsetY = makeOffsetPoly(Xcoordinatesb, Ycoordinatesb, Oldoffset)
+                    convertInnerBoundary = convert_result_check_W( OffsetX, OffsetY)
+                    areaPlotvalidR = Area(convertInnerBoundary)
+                    print("Oldoffset", Oldoffset)
+                    offsetvalue = Oldoffset
+                    break 
+            #print("offsetvalue", offsetvalue)
 
-                population_possibleB = area_all//30 
-                # print ("pop_possible", population_possibleB, countFloors)
-            
-            dict_sorted[i]['Plotobject'].set_floors(countFloors)
-              
-   
-            if population_possibleB > population:
-                break 
-    
-    return dict_sorted   
+                else: 
+                    convertInnerBoundary = convert_result_check_W(OffsetX, OffsetY)
+                    areaPlotvalidR = Area(convertInnerBoundary)
 
-def calc(arraypoints, floors, heightperfloor):
-    
-    a = floors*heightperfloor
-    offsetvalue = 0
-    
-    Xcoordinatesb, Ycoordinatesb = generatexy (arraypoints)
+            areaPlotfinal.append(areaPlotvalidR)
+            OffsetListdividedPoly.append(offsetvalue)
 
-    #check distance of intersectes points and offsets plot if possible
-    boundarylengths = lengthBoundary(Xcoordinatesb, Ycoordinatesb) #9
-
-    
-    while min(boundarylengths) > 15 and a >= 2:    
+        areaR = 0
+        for area in areaPlotfinal:
+            areaR += area
         
-        Oldoffset = offsetvalue
-        #print ("oldlength", oldMinLEngth)
-       
-        a -= 0.2
-        offsetvalue = floors*heightperfloor//a 
-        OffsetX, OffsetY = makeOffsetPoly(Xcoordinatesb,Ycoordinatesb,offsetvalue)
-        boundarylengths = lengthBoundary(OffsetX, OffsetY)
-        
-        Points_2_check = convert_into_Points(OffsetX, OffsetY)
-        
-        if min(OffsetX) == min(Xcoordinatesb) or determine_loop_direction(Points_2_check) == "Counterclockwise":
-
-            
-            return Oldoffset
-
-    return offsetvalue
-
-def calc_E(arraypoints):
+        print("areaR", areaR)
+        return areaR, dividedPoly, OffsetListdividedPoly
+    
+def calc(arraypoints, minboundarylength):
     
     offsetvalue = 0
     Xcoordinatesb, Ycoordinatesb = generatexy (arraypoints)
     #check distance of intersectes points and offsets plot if possible
     boundarylengths = lengthBoundary(Xcoordinatesb, Ycoordinatesb)
     
-    while min(boundarylengths) > 20:  
+    while min(boundarylengths) > minboundarylength:  
         
         Oldoffset = offsetvalue
         #print("Oldoffset", Oldoffset)
             
-        offsetvalue += 1
+        offsetvalue += 0.5
         OffsetX, OffsetY = makeOffsetPoly(Xcoordinatesb,Ycoordinatesb,offsetvalue)
         boundarylengths = lengthBoundary(OffsetX, OffsetY)
         #print("boundarylengths", min(boundarylengths))
@@ -1181,31 +1589,35 @@ def calc_E(arraypoints):
             return Oldoffset
     #print("offsetvalue", offsetvalue)
     return offsetvalue
-#--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+
+#--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # PROZESS AND CALLDRAWFUNTION
 def G(arraypoints, colorp):
-    OffsetX, OffsetY = offsetallplots5(arraypoints)
+    print("arraypoints", arraypoints)
+    newboundary = offsetallplots5(arraypoints)
     #convert x and y lists 
+    OffsetX, OffsetY = generatexy(newboundary)
     xCoordAr, yCoordAr = makeFloatfromPoint(OffsetX, OffsetY)
     pleneGGG = plane(xCoordAr,yCoordAr,colorp)
     
     return pleneGGG
 
-    
 def R(arraypoints, floors, heightperfloor):
-    
+
     meshesRfinal = []
     linesRfinal = []
-    planeRfinal = []
+ 
     
-
-    area, dividedboundary, dividedoffset = calc_R(arraypoints)
+    area, dividedboundary, dividedoffset = calcR(arraypoints)
+    
+    
+    print("dividedoffset", dividedoffset)
 
     length = len(dividedboundary)
     
     for i in range(0, length):
-        #print("i", i)
+        print("i", i)
         xCoordB, yCoordB = generatexy (dividedboundary[i])
         xCoordout,ycoordout = makeFloatfromPoint(xCoordB, yCoordB) 
         
@@ -1217,7 +1629,6 @@ def R(arraypoints, floors, heightperfloor):
         IntersectionLines = numLinesToVec(IntersectionLines)
         #draw_system(IntersectionLines)
 
-        planeR = plane(xCoordout,ycoordout,THREE.Color.new("rgb(174,155,148)"))
         
         
         meshesR, linesR = generateShape(xCoordAr,yCoordAr,THREE.Color.new("rgb(219,208,205)"), THREE.Color.new("rgb(174,155,148)"),floors, heightperfloor)
@@ -1227,24 +1638,27 @@ def R(arraypoints, floors, heightperfloor):
         
         for k in range(len(linesR)):
             linesRfinal.append(linesR[k])
-            
-        
-        planeRfinal.append(planeR)
-        
-    #print("linesR", linesR)
-   
-   # print ("meshesR", meshesR)
-    return meshesRfinal, linesRfinal, planeRfinal
 
+    offsetpoly = offsetallplots5(arraypoints)
+    Xcoordinates, Ycoordinates = generatexy(offsetpoly)
+    xCoordB, yCoordB = makeFloatfromPoint( Xcoordinates, Ycoordinates)
+    
+    planeR = plane(xCoordB,yCoordB,THREE.Color.new("rgb(174,155,148)"))
+    
+    return meshesRfinal, linesRfinal, planeR
 
 def B(arraypoints, colorm, colorl, colorp, floors, heightperfloor):
 
    
-    area, boundary, Offsetv  = calc_B(arraypoints) 
+    area, boundary, Offsetv  = calcB(arraypoints) 
+    
+    
+
     xCoordB, yCoordB = generatexy (boundary)
+    length = lengthBoundary( xCoordB, yCoordB)
     xCoordBF, yCoordBF = makeFloatfromPoint(xCoordB, yCoordB) 
     
-    if Offsetv == 0:
+    if Offsetv == 0 or min (length)< 8:
 
         plane1 = plane(xCoordBF, yCoordBF,colorp)
         meshes_listB, lines_listB = generateShape(xCoordBF,yCoordBF,colorm,colorl, floors, heightperfloor )
@@ -1259,26 +1673,24 @@ def B(arraypoints, colorm, colorl, colorp, floors, heightperfloor):
         
         plane1 = plane(xCoordB, yCoordB,colorp)
         meshes_listB, lines_listB = generateShapeblock(xCoordB,yCoordB,colorm,colorl,xCoordAr, yCoordAr, BlockPermiterLines,floors, heightperfloor)
-   
+
     return meshes_listB, lines_listB, plane1
 
 def H(arraypoints, floors, heightperfloor):
     
     meshesRfinal = []
     linesRfinal = []
-    planeRfinal = []
+    
+    area, dividedboundary, dividedoffset = calcH(arraypoints)
+    print("dividedboundary", dividedboundary)
+    print("dividedoffset", dividedoffset)
     
     
-    area, dividedboundary, dividedoffset = calc_H(arraypoints)
-    #print("dividedboundary", dividedboundary)
-    #print("dividedoffset", dividedoffset)
-    
-    
-    #print("len(dividedboundary)", len(dividedboundary))
+    print("len(dividedboundary)", len(dividedboundary))
     length = len(dividedboundary)
     
     for i in range(0, length):
-       # print("i", i)
+        print("i", i)
         xCoordB, yCoordB = generatexy (dividedboundary[i])
         xCoordout,ycoordout = makeFloatfromPoint(xCoordB, yCoordB) 
        
@@ -1289,10 +1701,6 @@ def H(arraypoints, floors, heightperfloor):
         IntersectionLines = ListPoint2Lines(xCoordsf, yCoordsf)
         IntersectionLines = numLinesToVec(IntersectionLines)
         # draw_system(IntersectionLines)
-
-        planeR = plane(xCoordout,ycoordout,THREE.Color.new("rgb(174,155,148)"))
-        # print("planeRfinal", planeRfinal)
-        # print("planeR", planeR)
         
         meshesR, linesR = generateShape(xCoordAr,yCoordAr,THREE.Color.new("rgb(219,208,205)"), THREE.Color.new("rgb(174,155,148)"),4, heightperfloor)
         
@@ -1301,17 +1709,11 @@ def H(arraypoints, floors, heightperfloor):
         
         for k in range(len(linesR)):
             linesRfinal.append(linesR[k])
-            
-        
-        planeRfinal.append(planeR)
-        
-        # print("linesR", linesR)
-    
-        # print ("meshesR", meshesR)
-        
 
-    
-        Offset2X, Offset2Y = makeOffsetPoly(xCoordsf, yCoordsf , 3)
+        boundaryoffsett = convert_result_check_W(xCoordsf, yCoordsf)
+        offsetValTop = calc(boundaryoffsett, 5)
+        
+        Offset2X, Offset2Y = makeOffsetPoly(xCoordsf, yCoordsf , offsetValTop)
         xCoordAr2, yCoordAr2 = makeFloatfromPoint(Offset2X, Offset2Y)
 
         meshesTop, linesTop = generateShapeTop(xCoordAr2, yCoordAr2,THREE.Color.new("rgb(219,208,205)"), THREE.Color.new("rgb(174,155,148)"),floors-4, heightperfloor)
@@ -1320,19 +1722,24 @@ def H(arraypoints, floors, heightperfloor):
         
         for k in range(len(linesTop)):
             linesRfinal.append(linesTop[k])
+   
     
-    return meshesRfinal, linesRfinal, planeRfinal
-
-
-def E(arraypoints, colorp, colorm, colorl, floors, heightperfloor):
-
+    offsetpoly = offsetallplots5(arraypoints)
+    Xcoordinates, Ycoordinates = generatexy(offsetpoly)
+    xCoordB, yCoordB = makeFloatfromPoint( Xcoordinates, Ycoordinates)
+    planeH = plane(xCoordB,yCoordB,THREE.Color.new("rgb(174,155,148)"))
     
-    Xcoordinates, Ycoordinates = offsetallplots5(arraypoints)
-    newOuterboundary = convert_result_check_W(Xcoordinates, Ycoordinates)
+    return meshesRfinal, linesRfinal, planeH
+
+def E(arraypoints, colorm, colorp, colorl, floors, heightperfloor):
+
+    newOuterboundary = offsetallplots5(arraypoints)
+    
+    Xcoordinates, Ycoordinates = generatexy(newOuterboundary)
 
     xCoordB, yCoordB = makeFloatfromPoint( Xcoordinates, Ycoordinates)
     
-    offsetvalue = calc_E(newOuterboundary)
+    offsetvalue = calc(newOuterboundary, 10)
     
     OffsetX, OffsetY = makeOffsetPoly(Xcoordinates,Ycoordinates, offsetvalue)
 
@@ -1347,17 +1754,24 @@ def E(arraypoints, colorp, colorm, colorl, floors, heightperfloor):
     return meshesI, linesI, plane1
 
 def generateTypeL (dict_sorted, offsetR, offsetH, heightperfloorR, heightperfloorB, heightperfloorH, population, density):
+    global maxpopulation, areaLiving
     
-    calculatetype(dict_sorted, density, population, 11)
-    colorm = THREE.Color.new("rgb(219,208,205)")
-    colorl = THREE.Color.new("rgb(174,155,148)")
+    maxpopulation = calcmaxpeople(dict_sorted)
+    print("maxpopulation", maxpopulation)
+    areaLiving = calculatetype(dict_sorted, density, population, maxpopulation)
+    
+    colorm = THREE.Color.new("rgb(203,182,168)")
+    colorm = THREE.Color.new("rgb(238,214,206)")
+    colorm = THREE.Color.new("rgb(204,185,178)")
+    
+    colorl = THREE.Color.new("rgb(189,136,110)")
     colorp = THREE.Color.new("rgb(174,155,148)")
     
     meshes_listL = []
-    meshes_listH = []
-    
     lines_listL = []
-    lines_listH = []
+    meshes_list = []
+    lines_list = []
+    ground = []
     groundes = []
     green = []
     greenP = []
@@ -1366,7 +1780,7 @@ def generateTypeL (dict_sorted, offsetR, offsetH, heightperfloorR, heightperfloo
             #print("typus", dict_sorted[i]['Plotobject']. get_area_type())
             
             if dict_sorted[i]['Plotobject']. get_area_type() == 0:
-                greenP = G(dict_sorted[i]['Plotobject'].get_outerboundary(), THREE.Color.new("rgb(194,204,185)"))
+                greenP = G(dict_sorted[i]['Plotobject'].get_outerboundary(), THREE.Color.new("rgb(138,158,134)"))
             
             if dict_sorted[i]['Plotobject']. get_area_type() == 1:
                 
@@ -1411,62 +1825,125 @@ def generateTypeL (dict_sorted, offsetR, offsetH, heightperfloorR, heightperfloo
             
     return meshes_listL, lines_listL, groundes, green
 
-
-def offsetAndGenerateShapeO(arraypoints, colorm, colorl, colorp , floors, heightperfloor):
+def offsetAndGenerateShapeO(arraypoints, colorm, colorl, colorp , heightperfloor):
     global scene 
-    Xcoordinates, Ycoordinates = offsetallplots5(arraypoints)
-    newOuterboundary = convert_result_check_W(Xcoordinates, Ycoordinates)
-
-    xCoordB, yCoordB = makeFloatfromPoint( Xcoordinates, Ycoordinates)
-    
-    offsetvalue = calc(newOuterboundary, floors, heightperfloor)
-    
-    OffsetX, OffsetY = makeOffsetPoly(Xcoordinates,Ycoordinates, offsetvalue)
-
-    xCoordAr, yCoordAr = makeFloatfromPoint(OffsetX, OffsetY)
-
-    IntersectionLines = ListPoint2Lines(OffsetX, OffsetY)
-    IntersectionLines = numLinesToVec(IntersectionLines)
-
-    plane1 = plane(xCoordB, yCoordB,colorp)
-    meshesI, linesI = generateShape(xCoordAr,yCoordAr,colorm, colorl,floors, heightperfloor)
-    
-    return meshesI, linesI, plane1
-
-def offsetAndGenerateShapeI(arraypoints, offsetvalue, colorm, colorl, colorp , floors, heightperfloor):
-    global scene 
-    Xcoordinates, Ycoordinates = offsetallplots5(arraypoints)
-    newOuterboundary = convert_result_check_W(Xcoordinates, Ycoordinates)
-
-    xCoordB, yCoordB = makeFloatfromPoint( Xcoordinates, Ycoordinates)
-    
-    
-    OffsetX, OffsetY = makeOffsetPoly(Xcoordinates,Ycoordinates, offsetvalue)
-    
         
+    newOuterboundary = offsetallplots5(arraypoints)
+    Xcoordinates, Ycoordinates = generatexy(newOuterboundary)
+    xCoordB, yCoordB = makeFloatfromPoint( Xcoordinates, Ycoordinates)
+    
+    offsetvalue = calc(newOuterboundary, 15)
+    
+    floor = (offsetvalue*2)/heightperfloor
+    floors = round(floor) 
+   
+    offsetpolyg = offsetNpPoly(newOuterboundary, offsetvalue)
+    
+    arePerPlot = Area(offsetpolyg)
+    
+    peoploperplot = (arePerPlot*floors)//10
+    
+    peoploperplot = input_param.workplaces * peoploperplot
+    floor = (peoploperplot * 10 )//arePerPlot 
+    floors = round(floor) 
 
+
+    OffsetX, OffsetY = generatexy(offsetpolyg)
     xCoordAr, yCoordAr = makeFloatfromPoint(OffsetX, OffsetY)
 
-    IntersectionLines = ListPoint2Lines(OffsetX, OffsetY)
-    IntersectionLines = numLinesToVec(IntersectionLines)
-
+   
     plane1 = plane(xCoordB, yCoordB,colorp)
     meshesI, linesI = generateShape(xCoordAr,yCoordAr,colorm, colorl,floors, heightperfloor)
     
-    return meshesI, linesI, plane1
+    return meshesI, linesI, peoploperplot, arePerPlot
+    
+def offsetAndGenerateShapeI(arraypoints, offsetvalue, colorm, colorl, colorp , floors, heightperfloor):
+   
+    newOuterboundary = offsetallplots5(arraypoints)
+
+    Xcoordinates, Ycoordinates = generatexy(newOuterboundary)
+    xCoordB, yCoordB = makeFloatfromPoint( Xcoordinates, Ycoordinates)
+    plane1 = plane(xCoordB, yCoordB,colorp)
+   
+   
+    dividedPoly = polygonDivider(newOuterboundary,50, 25000, 1, True,newOuterboundary, False, False, False, 0, [], 80)
+    print("dividedPoly", dividedPoly)
+    
+    # if dividedPoly == None:
+    #     dividedPoly = []
+    #     dividedPoly.append(arraypoints)
+    
+    # else:
+        
+    areadividedplots = []
+    for i in range(len(dividedPoly)): 
+        
+        areaperplot =  Area(i)
+        areadividedplots.append(areaperplot)
+
+    j = areadividedplots.index(max(areadividedplots))
+    
+    # xcoordj, ycoordj = generatexy(dividedPoly[j])
+    maxoffset= calc(dividedPoly[j],5)
+    if maxoffset == 0:
+        maxheightperfloor = 3
+    
+    
+    else:
+        maxheightperfloor = maxoffset*2
+        print("maxoffset", maxoffset)
+        
+        offsetvalue = heightperfloor//2
+        
+        if offsetvalue < maxoffset and heightperfloor < maxheightperfloor:
+            
+            offsetmaxpoly = offsetNpPoly(dividedPoly[j], offsetvalue)
+            OffsetX, OffsetY = generatexy(offsetmaxpoly)
+            xCoordAr, yCoordAr = makeFloatfromPoint(OffsetX, OffsetY)
+            
+            arePerPlot = Area(offsetmaxpoly)
+            
+            xCoordAr, yCoordAr = makeFloatfromPoint(OffsetX, OffsetY)
+
+            # IntersectionLines = ListPoint2Lines(OffsetX, OffsetY)
+            # IntersectionLines = numLinesToVec(IntersectionLines)
+
+           
+            meshesI, linesI = generateShape(xCoordAr,yCoordAr,colorm, colorl,floors, heightperfloor)
+            return meshesI, linesI, plane1, arePerPlot
+    
+        else: 
+            
+            offsetmaxpoly = offsetNpPoly(dividedPoly[j], maxoffset)
+            OffsetX, OffsetY = generatexy(offsetmaxpoly)
+            xCoordAr, yCoordAr = makeFloatfromPoint(OffsetX, OffsetY)
+            
+            arePerPlot = Area(offsetmaxpoly)
+
+            xCoordAr, yCoordAr = makeFloatfromPoint(OffsetX, OffsetY)
+
+            # IntersectionLines = ListPoint2Lines(OffsetX, OffsetY)
+            # IntersectionLines = numLinesToVec(IntersectionLines)
+
+           
+            meshesI, linesI = generateShape(xCoordAr,yCoordAr,colorm, colorl,floors, maxheightperfloor)
+        
+            return meshesI, linesI, plane1, arePerPlot
 
 def offsetallplots5(arraypoints):
-    arraylines = generateLinesNum(arraypoints)
-    Plotboundary = numLinesToVec(arraylines)
+    # arraylines = generateLinesNum(arraypoints)
+    # Plotboundary = numLinesToVec(arraylines)
     
-    draw_system(Plotboundary)
+    offsetpoints = offsetNpPoly(arraypoints, 4)
 
-    Xcoordinatesb, Ycoordinatesb = generatexy (arraypoints)
-    Xcoordinates5, Ycoordinates5 = makeOffsetPoly(Xcoordinatesb,Ycoordinatesb, 5)
+    if determine_loop_direction(offsetpoints) == "Counterclockwise":
+        print( "changed value outer")
+        return arraypoints
     
-    return Xcoordinates5, Ycoordinates5
+    return offsetpoints
+
+
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
 # DRAW FUNKTIONS THREEJS 
 #draw lines 
 def draw_system(lines):
@@ -1483,7 +1960,7 @@ def draw_system(lines):
         scene.add(vis_line)
 #draw plane surface        
 def plane(xCordsArray,yCordsArray,color):
-    
+
     shape_Green = THREE.Shape.new()
 
     for i in range(len(xCordsArray)):
@@ -1524,8 +2001,8 @@ def plane(xCordsArray,yCordsArray,color):
     plane.opacity = 0
     plane.receiveShadow = True
 #generate shapes to extrude and cap 
-global generateShape
 
+global generateShape
 def generateShape(xCordsArray,yCordsArray, color, colorl, floors, heightperfloor,):
     
     global scene
@@ -1565,7 +2042,7 @@ def generateShape(xCordsArray,yCordsArray, color, colorl, floors, heightperfloor
         linematerial.color = colorl
         line = THREE.LineSegments.new( edgesout, linematerial )
         line_list1.append(line)
-        
+   
         scene.add(line)
         
         
@@ -1698,10 +2175,9 @@ def generateShapeblock(xCordsArray,yCordsArray, color, colorl, xCordsHoles, yCor
 
     return meshesB, linesB
 
+
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
 #HELPER FUNCTIONS 
-
 def generateLinesNum(listpoints):
         listLines = []
         
@@ -1725,7 +2201,7 @@ def generateNumpyArray (plotboundaries):
         Point_list.append(temp_list)
         temp_list=[]
       
-    SUB_SUB_NUMPY = [[np.array(k) * 1 for k in i] for i in plotboundaries]
+    SUB_SUB_NUMPY = [[np.array(k) for k in i] for i in plotboundaries]
     # print("biggerscale", SUB_SUB_NUMPY)
     
     return SUB_SUB_NUMPY
@@ -1845,6 +2321,57 @@ def makeOffsetPoly(oldX, oldY, offset, outer_ccw = 1):
     else:
         return newX, newY
 
+def makeOffsetPolyOuter(oldX, oldY, offset, outer_ccw = 1):
+    
+    num_points = len(oldX)
+    global newX,newY
+
+    newX = []
+    newY = []
+
+    for indexpoint in range(num_points):
+        prev = (indexpoint + num_points -1 ) % num_points
+        next = (indexpoint + 1) % num_points
+        vnX =  oldX[next] - oldX[indexpoint]
+        vnY =  oldY[next] - oldY[indexpoint]
+        vnnX, vnnY = normalizeVec(vnX,vnY)
+        nnnX = vnnY
+        nnnY = -vnnX
+        vpX =  oldX[indexpoint] - oldX[prev]
+        vpY =  oldY[indexpoint] - oldY[prev]
+        vpnX, vpnY = normalizeVec(vpX,vpY)
+        npnX = vpnY * outer_ccw
+        npnY = -vpnX * outer_ccw
+        bisX = (nnnX + npnX) * outer_ccw
+        bisY = (nnnY + npnY) * outer_ccw
+        bisnX, bisnY = normalizeVec(bisX,  bisY)
+        bislen = offset /  np.sqrt((1 + nnnX*npnX + nnnY*npnY)/2)
+
+        newX.append(oldX[indexpoint] + bislen * bisnX)
+        newY.append(oldY[indexpoint] + bislen * bisnY)
+        
+    points_check = convert_into_Points(newX, newY)
+    determine_loop_direction(points_check)
+   
+    newOuterboundary = convert_result_check_W(newX, newY)
+   
+    if isSelfIntersect(newOuterboundary) == True:
+        # Remove the line that caused the self-intersection
+       
+        newX.pop()
+        newY.pop()
+        
+       
+        makeOffsetPolyOuter(newX, newY, offset, 1)
+       
+        print ("newX, newY")
+        return newX, newY
+        
+    
+    else:
+        print("newX, newY", "newX, newY")
+        return newX, newY
+
 def isIntersectingWithoutEndpoints(intersectLinesAsNPList):
     if (np.all(intersectLinesAsNPList[0][0] == intersectLinesAsNPList[1][0]) or np.all(intersectLinesAsNPList[0][0] == intersectLinesAsNPList[1][1]) or 
     np.all(intersectLinesAsNPList[0][1] == intersectLinesAsNPList[1][0]) or np.all(intersectLinesAsNPList[0][1] == intersectLinesAsNPList[1][1])):
@@ -1951,8 +2478,6 @@ def isSelfIntersect(polyVerticesAsNP):
             if isIntersectingWithoutEndpoints(testLines) == True:
                 return True
     return False
-
-# print(isSelfIntersect([np.array([0,0]),np.array([10,0]),np.array([10,10]),np.array([0,10]),np.array([11,5])]))
              
 def lengthBoundary(xcoord, ycoord):
     #print("xcoordoffset", xcoord)
@@ -1971,14 +2496,14 @@ def loop_check_angle(arraypoints):
     
     
     for current_line in arraylines: 
-        #print(current_line[0])
+        print(current_line[0])
         
         startline = current_line[0]
-        #print("startline", startline)
+        print("startline", startline)
         next_line = current_line[1]
         
         angle = calculate_angle(startline, next_line)
-        #print ("angle" , math.degrees(angle))
+        print ("angle" , math.degrees(angle))
         
         if math.degrees(angle) > 90:
             arraylines.pop(current_line[0])  
@@ -1990,13 +2515,13 @@ def loop_check_angle(arraypoints):
 
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
+#MOUS AND CLICKABILITY
 def transform_drag(event):
     event.preventDefault()
 
     if not event.value:
         update_Boundary()      
-############################################
+
 def update_Boundary(): 
     global len_coords, curve_object, Close_Bool,curve_material
     coords=[]
@@ -2039,7 +2564,7 @@ def update_Boundary():
             scene.add(curve_object)
             global Boundary_status
             Boundary_status = "closed"
-############################################
+
 def update_road():
     global len_coords_road, curve_object_road,all_curve_object_road,curve_material, output_lists
     coords_road=[]
@@ -2060,16 +2585,12 @@ def update_road():
             curve_object_road = THREE.Line.new( geometry, curve_material )
             all_curve_object_road.append(curve_object_road)
             scene.add(curve_object_road)
-############################################
 
-############################################
-
-############################################
 def toggle_Boundary_status():
     global Boundary_status, Close_Bool
     Boundary_status = "open"
     Close_Bool = False
-############################################
+
 def on_mouse_move(event):
 
     event.preventDefault()
@@ -2128,7 +2649,7 @@ def on_mouse_move(event):
         Hover_over_Save=True
     else:
         Hover_over_Save=False
-############################################
+
 def on_mouse_down(event):
 
     event.preventDefault()
@@ -2164,10 +2685,10 @@ def on_mouse_down(event):
 
     update_Boundary()
     update_road()
-############################################
+
 def on_mouse_up(event):
     pass
-############################################
+
 def on_dbl_click(event):
     event.preventDefault()
     global raycaster, mouse, objects, sphere_geom, sphere_material,Close_Bool, spheres,spheres_road,all_spheres, Saved, Hover_over_Save, output_lists,Input_Road_Coords_py,Boundary_Coords_py,count_Mainstreet,count_Substreet,count_Usage
@@ -2282,17 +2803,529 @@ def on_dbl_click(event):
         sphere_material.color = THREE.Color.new( "rgb(80,80,80)" )
         curve_material.color = THREE.Color.new("rgb(100,100,100)")
        
-        # console.log("Boundary_COORDS", Boundary_Coords_py)
-        # print("Boundary_COORDS", Boundary_Coords_py)
-        # console.log("Road_COORDS", Input_Road_Coords_py)
-        # print("Road_COORDS", Input_Road_Coords_py)
+        console.log("Boundary_COORDS", Boundary_Coords_py)
+        print("Boundary_COORDS", Boundary_Coords_py)
+        console.log("Road_COORDS", Input_Road_Coords_py)
+        print("Road_COORDS", Input_Road_Coords_py)
     scene.remove(curve_object)
     scene.remove(curve_object_road)
     update_Boundary()
     update_road()
 
+#--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#FIND PLOTS AND ASSIGN
+def determine_loop_direction(points):
+    n = len(points)
+    x = [p[0] for p in points]
+    y = [p[1] for p in points]
+    a = sum(x[i]*y[(i+1)%n] - x[(i+1)%n]*y[i] for i in range(n))
+    return "Counterclockwise" if a > 0 else "Clockwise"
 ##########################################################################################
-def polygonDivider(inputPolygonsAsNp,minSize = 0, maxSize = 250000, H_or_V = 1, mustHaveStreetConnection = False,streetToConnectToAsNPVertices = [], randomizeH_V = False, force_H = False, force_V = False,min_compactness = 0, finishedPolygons = [],percentageOfCut = 50, count = 0, turnCount = 0):
+def calculate_angle(line1, line2):
+    x1, y1 = line1[1][0] - line1[0][0], line1[1][1] - line1[0][1]
+    x2, y2 = line2[1][0] - line2[0][0], line2[1][1] - line2[0][1]
+    return math.atan2(x1*y2 - y1*x2, x1*x2 + y1*y2)
+##########################################################################################
+def sharpest_right_turn(angles):
+    
+    angles_in_radians = [math.radians(angle) for angle in angles]
+    right_turn_angles = []
+    for i in range(len(angles_in_radians)):
+        right_turn_angles.append(angles_in_radians[i])
+    max_turn_index = right_turn_angles.index(min(right_turn_angles))
+    return max_turn_index
+##########################################################################################
+def loop_finder(INPUT_LINES):
+
+    """
+    Given a list of lines represented as pairs of points, this function finds all loops in the lines.
+    A loop is defined as a series of lines where the endpoint of one line is the startpoint of the next line, and the endpoint of the last line is the startpoint of the first line.
+    The function returns a list of loops, with each loop represented as a list of points in the order they are encountered in the loop.
+    :param INPUT_LINES: list of lines represented as pairs of points
+    :return: list of loops, each represented as a list of points
+    """
+    Loops=[]
+    
+    for current_line in INPUT_LINES: 
+        Loop=[]
+        Loop.append(current_line[0])
+        Loop.append(current_line[1])
+
+        connecting_lines=[]
+        flipped_connector=[]
+        # line is  a connecting line, but not itself
+        
+        for line in INPUT_LINES:
+            if line [0] == current_line[1] and line != current_line:
+                connecting_lines.append(line)
+            if line [1] == current_line[1] and line != current_line:
+                flipped_connector=[]
+                flipped_connector.append(line[1])
+                flipped_connector.append(line[0])
+                connecting_lines.append(flipped_connector)
+            
+        
+
+        if len(connecting_lines) >=1:
+            connecting_angles = []
+            for neigbhor in connecting_lines:
+                angle = calculate_angle(current_line, neigbhor)           
+                connecting_angles.append(math.degrees(angle))
+            next_line_index= sharpest_right_turn(connecting_angles)
+            next_line = connecting_lines[next_line_index]
+            Loop.append(next_line[1])
+        
+        while Loop[-1] != Loop[0]:
+            
+            Next_connecting_lines=[]
+            for line in INPUT_LINES:  
+                if line == next_line or line[1] == next_line[0] and line[0] == next_line[1]:
+                    pass
+                else:
+                    if line [0] == Loop[-1] :
+                            Next_connecting_lines.append(line)
+                    
+                    if line [1] == Loop[-1] :
+                            flipped_connector=[]
+                            flipped_connector.append(line[1])
+                            flipped_connector.append(line[0])
+                            Next_connecting_lines.append(flipped_connector)
+
+            
+            if len(Next_connecting_lines) >=1:
+                next_connecting_angles =[]
+                for next_neigbhor in Next_connecting_lines:
+                    angle = calculate_angle(next_line, next_neigbhor)           
+                    next_connecting_angles.append(math.degrees(angle))
+                next_line_index= sharpest_right_turn(next_connecting_angles)
+                next_line = Next_connecting_lines[next_line_index]
+                Loop.append(next_line[1])
+                if Loop.count(next_line[1]) == 2:
+                    break
+            else:
+                Loop=[]
+                break
+        if len(Loop) >=1:    
+            Loop.pop(-1)   #delete double coordinate
+
+        direction = determine_loop_direction(Loop)
+        if direction== "Clockwise":
+            if len(Loop) >=1:  
+                Loops.append(Loop)
+        if direction== "Counterclockwise":
+            Loop=[]
+            FlippedStart=[]
+            FlippedStart.append(current_line[1])
+            FlippedStart.append(current_line[0])
+            INPUT_LINES.append(FlippedStart)
+            
+    new_loops = []
+    for sublist in Loops:
+        is_duplicate = False
+        for other_sublist in new_loops:
+            if set(map(tuple,sublist)) <= set(map(tuple,other_sublist)):
+                is_duplicate = True
+                break
+        if not is_duplicate:
+            new_loops.append(sublist)
+    Loops = new_loops              #Loops is now the cleaned up version of itself
+
+
+
+
+    return Loops
+##########################################################################################
+def find_overlapping_plots(plots):
+    # Create a dictionary to store the mapping from plot number to overlapping plots
+    plot_overlaps = {}
+    # Iterate over each plot
+    for i, plot in enumerate(plots):
+        # Initialize an empty list to store the overlapping plots for this plot
+        overlaps = []
+        # Iterate over the other plots
+        for j, other_plot in enumerate(plots):
+            # Skip the current plot
+            if i == j:
+                continue
+            # Check if the current plot has 2 or more coordinates in common with the other plot
+            common_coords = set(plot).intersection(set(other_plot))
+            if len(common_coords) >= 2:
+                overlaps.append(j)
+        # Add the mapping from plot number to overlapping plots to the dictionary
+        plot_overlaps[i] = overlaps
+    # Create a list of tuples (plot number, overlapping plots) from the dictionary
+    result = [(plot, overlaps) for plot, overlaps in plot_overlaps.items()]
+    return result
+##########################################################################################
+def convert_data(list_neighbours: list[list[int, list[int]]]) -> dict:
+    """
+    Converts the data from a list to a dictionary.
+    """
+    # Initialize the dictionary
+    dictionary = {}
+
+    # Loop through the plots
+    for plot, neighbours in list_neighbours:
+
+        # Add the plot to the dictionary
+        dictionary[plot] = {'value': None, 'neighbours': neighbours}
+    return dictionary
+##########################################################################################
+def random_distribution(dictionary: dict) -> dict:
+    global PLOTS
+    """
+    Randomly assign a value to each plot and checks if the rules are
+    respected.
+    """
+    # Declare the possible values
+    weights=[]
+    modified_val_l = 110-input_param.LivingIndustrial
+    weights.append(modified_val_l)
+    modified_val_i = input_param.LivingIndustrial
+    weights.append(modified_val_i)
+    modified_val_g = (110-input_param.LivingIndustrial+55)/2
+    weights.append(modified_val_g)
+    modified_val_o = (input_param.LivingIndustrial+55)/2
+    if modified_val_o<55:
+        modified_val_o=modified_val_o/2 
+    weights.append(modified_val_o)
+    modified_val_e = 100
+    weights.append(modified_val_e)
+    
+    values = ['L', 'I', 'G', 'O', 'E']
+    #weights = [20, 20, 20, 20, 20]
+    L_Count=0
+    I_Count=0
+    G_Count=0
+    O_Count=0
+    E_Count=0
+    
+    # Get the first plot in the dictionary
+    first_plot = list(dictionary.keys())[0]
+
+    # Choose a random value from the list of possible values
+    value = choice(['L', 'I', 'G', 'O', 'E'])
+    VALID_VALUES=[]
+    # Assign the random value to the first plot and change possible Neighbor Values accordingly
+    dictionary[first_plot]['value'] = value
+    combined_plots = {}
+    for neighbor in dictionary[first_plot]['neighbours']:
+        if dictionary[first_plot]['value'] == 'L':
+                        while "I" in values:
+                            index= values.index("I")
+                            if index < len(values):
+                                values.pop(index)
+                                weights.pop(index)
+        elif dictionary[first_plot]['value'] == 'I':
+            while "L" in values:
+                index= values.index("L")
+                if index < len(values):
+                    values.pop(index)
+                    weights.pop(index)
+            while "E" in values:
+                index= values.index("E")
+                if index < len(values):
+                    values.pop(index)
+                    weights.pop(index)
+        #elif dictionary[first_plot]['value'] == 'G':
+            # while "G" in values:
+            #     index= values.index("G")
+            #     if index < len(values):
+            #         values.pop(index)
+            #         weights.pop(index)
+        if L_Count >= 4:
+            while "L" in values:
+                index= values.index("L")
+                if index < len(values):
+                    values.pop(index)
+                    weights.pop(index)
+        if I_Count >= 4:
+            while "I" in values:
+                index= values.index("I")
+                if index < len(values):
+                    values.pop(index)
+                    weights.pop(index)
+        if G_Count >= 4:
+            while "G" in values:
+                index= values.index("G")
+                if index < len(values):
+                    values.pop(index)
+                    weights.pop(index)
+        if O_Count >= 4:
+            while "O" in values:
+                index= values.index("O")
+                if index < len(values):
+                    values.pop(index)
+                    weights.pop(index)
+        if E_Count >= input_param.population//3000:
+            while "E" in values:
+                index= values.index("E")
+                if index < len(values):
+                    values.pop(index)
+                    weights.pop(index)
+
+        
+        
+        valid_vals= ([neighbor],values,weights)
+        VALID_VALUES.append(valid_vals)
+    VALID_VALUES_NO_DOUBLES = []
+        
+            
+    visited=[0]
+
+    if value=="L":
+        L_Count=L_Count+1                    
+        
+    elif value=="I":
+        I_Count=I_Count+1
+        
+    elif value=="G":
+        G_Count=G_Count+1
+        
+    elif value=="O":
+        O_Count=O_Count+1
+        
+    elif value=="E":
+        E_Count=E_Count+1
+    
+    
+    for i in VALID_VALUES:
+                if i not in VALID_VALUES_NO_DOUBLES:
+                    VALID_VALUES_NO_DOUBLES.append(i)
+    for plot in VALID_VALUES_NO_DOUBLES:
+            plot_num, possible_values, weights = plot
+            plot_num = plot_num[0]
+            indices = range(len(possible_values))
+            if plot_num in combined_plots:
+                current_values, current_weights= combined_plots[plot_num]
+                combined_values = set(current_values) & set(possible_values)
+                combined_indices = [i for i in indices if possible_values[i] in combined_values]
+                combined_weights = [weights[i] for i in combined_indices]
+                combined_plots[plot_num] = (list(combined_values), combined_weights)
+            else:
+                combined_plots[plot_num] = (possible_values, weights)
+    combined_plots = {key: value for key, value in combined_plots.items() if key not in visited}
+    sorted_dict = dict(sorted(combined_plots.items(), key=lambda x: len(x[1][0])))
+    
+    # Assign the value to the plot
+    # dictionary[neighbor]['value'] = value
+
+    values = ['L', 'I', 'G', 'O', 'E']
+    # Declare the possible values
+    weights=[]
+    modified_val_l = 110-input_param.LivingIndustrial
+    weights.append(modified_val_l)
+    modified_val_i = input_param.LivingIndustrial
+    weights.append(modified_val_i)
+    modified_val_g = (110-input_param.LivingIndustrial+55)/2
+    weights.append(modified_val_g)
+    modified_val_o = (input_param.LivingIndustrial+55)/2
+    if modified_val_o<55:
+        modified_val_o=modified_val_o/2 
+    weights.append(modified_val_o)
+    modified_val_e = 100
+    weights.append(modified_val_e)
+    #weights = [20, 20, 20, 20, 20]
+        
+    
+
+    
+    # plots_sorted = []
+    # for plot in dictionary.keys():
+    #     remaining_values = 5 - len(values)
+    #     plots_sorted.append((plot, remaining_values))
+    # plots_sorted.sort(key=lambda x: x[1])
+    #print("PLOTS_SORTED_WEIRD",sorted_dict)
+    
+
+    # Loop through the plots
+    while combined_plots != {}:
+        for plot in sorted_dict:
+            if plot>0:
+                visited.append(plot)
+                
+                # Check the values of the neighbors
+                for neighbor in dictionary[plot]['neighbours']:
+                    # if dictionary[neighbor]['value'] == 'G':
+                    #     while "G" in values:
+                    #         index= values.index("G")
+                    #         if index < len(values):
+                    #             values.pop(index)
+                    #             weights.pop(index)
+                    # elif dictionary[neighbor]['value'] == 'C':
+                    #     while "I" in values:
+                    #         index= values.index("I")
+                    #         if index < len(values):
+                    #             values.pop(index)
+                    #             weights.pop(index)
+                    if dictionary[neighbor]['value'] == 'L':
+                        while "I" in values:
+                            index= values.index("I")
+                            if index < len(values):
+                                values.pop(index)
+                                weights.pop(index)
+                    elif dictionary[neighbor]['value'] == 'I':
+                        while "L" in values:
+                            index= values.index("L")
+                            if index < len(values):
+                                values.pop(index)
+                                weights.pop(index)
+                        # while "C" in values:
+                        #     index= values.index("C")
+                        #     if index < len(values):
+                        #         values.pop(index)
+                        #         weights.pop(index)
+                        # while "P" in values:
+                        #     index= values.index("P")
+                        #     if index < len(values):
+                        #         values.pop(index)
+                        #         weights.pop(index)
+                    elif dictionary[neighbor]['value'] == 'E':
+                        while "I" in values:
+                            index= values.index("I")
+                            if index < len(values):
+                                values.pop(index)
+                                weights.pop(index)
+                    # if L_Count >= 4:
+                    #     while "L" in values:
+                    #         index= values.index("L")
+                    #         if index < len(values):
+                    #             values.pop(index)
+                    #             weights.pop(index)
+                    # if I_Count >= 4:
+                    #     while "C" in values:
+                    #         index= values.index("I")
+                    #         if index < len(values):
+                    #             values.pop(index)
+                    #             weights.pop(index)
+                    # if G_Count >= 4:
+                    #     while "G" in values:
+                    #         index= values.index("G")
+                    #         if index < len(values):
+                    #             values.pop(index)
+                    #             weights.pop(index)
+                    # if O_Count >= 4:
+                    #     while "O" in values:
+                    #         index= values.index("O")
+                    #         if index < len(values):
+                    #             values.pop(index)
+                    #             weights.pop(index)
+                    if E_Count >= len(PLOTS)//30:
+                        while "E" in values:
+                            index= values.index("E")
+                            if index < len(values):
+                                values.pop(index)
+                                weights.pop(index)
+                
+                    
+                    valid_vals= ([neighbor],values,weights)
+                    VALID_VALUES.append(valid_vals)
+
+            # Assign a value to the plot, using weighted probability
+            if(len(values))>=1:
+                value = choices(values, weights=weights, k=1)[0]
+                
+                # Assign the value to the plot
+                dictionary[plot]['value'] = value
+                
+
+            else:
+                for plot in dictionary.keys():
+                    # Set the value to None
+                    
+                    dictionary[plot]['value'] = None
+                return False 
+            
+            for i in VALID_VALUES: ###################################################### List operations for combining different possibilities when checking from a different neigbor
+                    if i not in VALID_VALUES_NO_DOUBLES:
+                        VALID_VALUES_NO_DOUBLES.append(i)
+            for plot in VALID_VALUES_NO_DOUBLES:
+                    plot_num, possible_values, weights = plot
+                    plot_num = plot_num[0]
+                    indices = range(len(possible_values))
+                    if plot_num in combined_plots:
+                        current_values, current_weights= combined_plots[plot_num]
+                        combined_values = set(current_values) & set(possible_values)
+                        combined_indices = [i for i in indices if possible_values[i] in combined_values]
+                        combined_weights = [weights[i] for i in combined_indices]
+                        combined_plots[plot_num] = (list(combined_values), combined_weights)
+                    else:
+                        combined_plots[plot_num] = (possible_values, weights)
+            values = ['L', 'I', 'G', 'O', 'E']    ##############################reset weights and Values
+            # Declare the possible values
+            weights=[]
+            modified_val_l = 110-input_param.LivingIndustrial
+            weights.append(modified_val_l)
+            modified_val_i = input_param.LivingIndustrial
+            weights.append(modified_val_i)
+            modified_val_g = (110-input_param.LivingIndustrial+55)/2
+            weights.append(modified_val_g)
+            modified_val_o = (input_param.LivingIndustrial+55)/2
+            if modified_val_o<55:
+                modified_val_o=modified_val_o/2    
+            weights.append(modified_val_o)
+            modified_val_e = 100
+            weights.append(modified_val_e)
+                    
+            #weights = [20, 20, 20, 20, 20]
+                    
+            combined_plots_all = {key: value for key, value in combined_plots.items()}################################# A list with all possible values for all Plots
+            sorted_dict_all = dict(sorted(combined_plots_all.items(), key=lambda x: len(x[1][0])))
+            #print("Options_if_changes_neccessary:",sorted_dict_all)       
+            
+            combined_plots = {key: value for key, value in combined_plots.items() if key not in visited}############### A list with all possible values for all Plots that havnt been assigned yet
+            sorted_dict = dict(sorted(combined_plots.items(), key=lambda x: len(x[1][0])))
+            
+            ############### Count the assignment Values
+            if value=="L":  
+                L_Count=L_Count+1                    
+                
+            elif value=="I":
+                I_Count=I_Count+1
+                
+            elif value=="G":
+                G_Count=G_Count+1
+                
+            elif value=="O":
+                O_Count=O_Count+1
+                
+            elif value=="E":
+                E_Count=E_Count+1
+   
+    print("LCount",L_Count)
+    print("ICount",I_Count)  
+    print("GCount",G_Count)  
+    print("OCount",O_Count)  
+    print("ECount",E_Count)  
+    # print(C_Count)     
+    # print(R_Count) 
+    # print(I_Count) 
+    # print(P_Count)
+    #print("visited",visited)
+    return dictionary
+##########################################################################################
+def find_solution(dictionary: dict,
+                max_time: float = 30) -> dict:
+    """
+    Generates solutions until a valid one is found or the time limit.
+    is reached.
+    """
+    # Initialize the answer and the time
+    answer, start = {}, time()
+
+    # Set the stopping condition
+    while answer == {} and (time() - start) < max_time:
+
+        # Get a potential solution
+        answer = random_distribution(dictionary)
+
+    if answer == False:
+        find_solution(dictionary,5)
+    else:
+        return answer
+
+##########################################################################################
+def polygonDivider(inputPolygonsAsNp,minSize = 0, maxSize = 250000, H_or_V = 1, mustHaveStreetConnection = False,streetToConnectToAsNPVertices = [], randomizeH_V = False, force_H = False, force_V = False,min_compactness = 0.2, finishedPolygons = [],percentageOfCut = 50, count = 0, turnCount = 0):
     #Explanation of polygon input:
     #InputPolygonsAsNp: The Polygon you want to subdivide. Geometry should be displayed as a list with the vertices of the polygon in it in the form of np-vectors
     #minSize: The minimal size a generated plot is allowed to have
@@ -2303,6 +3336,7 @@ def polygonDivider(inputPolygonsAsNp,minSize = 0, maxSize = 250000, H_or_V = 1, 
     #randomizeH_V: Put True to let the function randomize with each iteration if the polygons are slized vertically or horizontally
     #Force_H/Force_V: Forces the desired direction, no other direction will be used for the split
     #min_compactness: number between 0-1 that defines the required compactness of the generated Plots. NOT IMPLEMENTED YET
+    
 
     if len(inputPolygonsAsNp) == 0:
         return finishedPolygons
@@ -2338,24 +3372,15 @@ def polygonDivider(inputPolygonsAsNp,minSize = 0, maxSize = 250000, H_or_V = 1, 
 
     
     for i in range(len(currentPoly)):   #   For every "open" polygon that still needs processing
+        
+        #print("INPUTINSPLIT", currentPoly[i],cutDir,percentageOfCut)
         splitPoly = polygonSplit(currentPoly[i],cutDir,percentageOfCut)
-        
-        
-        if type(splitPoly) is str:
-            if count <= 5:
-                count += 1
-                return polygonDivider(currentPoly, minSize, maxSize, H_or_V, mustHaveStreetConnection ,streetToConnectToAsNPVertices , randomizeH_V , force_H , force_V ,min_compactness , currentFinishedPolys,percentageOfCut-(percentageOfCut/5) , count , turnCount)
-            
-            else:
-                inputPolygonsAsNp.pop(i)
-                return polygonDivider(currentPoly, minSize, maxSize, H_or_V, mustHaveStreetConnection ,streetToConnectToAsNPVertices , randomizeH_V , force_H , force_V ,min_compactness , currentFinishedPolys,percentageOfCut , count , turnCount)
-        
         newLeftPolys = splitPoly[0]
         newRightPolys = splitPoly[1]
         leftArea = []
         rightArea = []
         for j in newLeftPolys:
-            area = NumpyArea(j)
+            area = Area(j)
             if area > maxSize:
                 leftArea.append("Too Big")
                 continue
@@ -2366,7 +3391,7 @@ def polygonDivider(inputPolygonsAsNp,minSize = 0, maxSize = 250000, H_or_V = 1, 
                 leftArea.append("Right")
 
         for j in newRightPolys:
-            area = NumpyArea(j)
+            area = Area(j)
             if area > maxSize:
                 rightArea.append("Too Big")
                 continue
@@ -2389,7 +3414,7 @@ def polygonDivider(inputPolygonsAsNp,minSize = 0, maxSize = 250000, H_or_V = 1, 
                     polygonLines.append(CurrentLine)
             for s in polygonLines:
                 perimeter += np.linalg.norm(s[1]-s[0])
-            compactness = 4 * np.pi * NumpyArea(k) / perimeter ** 2
+            compactness = 4 * np.pi * Area(k) / perimeter ** 2
             if compactness >= min_compactness:
                 leftCompactness.append(True)
             else:
@@ -2407,14 +3432,14 @@ def polygonDivider(inputPolygonsAsNp,minSize = 0, maxSize = 250000, H_or_V = 1, 
                     polygonLines.append(CurrentLine)
             for s in polygonLines:
                 perimeter += np.linalg.norm(s[1]-s[0])
-            compactness = 4 * np.pi * NumpyArea(k) / perimeter ** 2
+            compactness = 4 * np.pi * Area(k) / perimeter ** 2
             if compactness >= min_compactness:
                 rightCompactness.append(True)
             else:
                 rightCompactness.append(False)
 
         if any(leftCompactness) == False or any(rightCompactness) == False:
-            if turnCount % 2:
+            if turnCount == 0 or turnCount % 2 == 0:
                 if cutDir == "H":
                     turnCount += 1  
                     return polygonDivider(currentPoly, minSize, maxSize, 1, mustHaveStreetConnection ,streetToConnectToAsNPVertices , False , force_H , force_V ,min_compactness , currentFinishedPolys,percentageOfCut , count , turnCount)
@@ -2473,7 +3498,7 @@ def polygonDivider(inputPolygonsAsNp,minSize = 0, maxSize = 250000, H_or_V = 1, 
             elif any(streetConLeft) == False or any(streetConRight) == False:
                 if count <=5:
                     count += 1
-                    if turnCount % 2:
+                    if turnCount == 0 or turnCount % 2 == 0:
                         if cutDir == "H":
                             turnCount += 1  
                             return polygonDivider(currentPoly, minSize, maxSize, 1, mustHaveStreetConnection ,streetToConnectToAsNPVertices , False , force_H , force_V ,min_compactness , currentFinishedPolys,percentageOfCut , count , turnCount)
@@ -2497,8 +3522,10 @@ def polygonDivider(inputPolygonsAsNp,minSize = 0, maxSize = 250000, H_or_V = 1, 
             elif all(streetConLeft) == True and all(streetConRight) == True:        #Condition met: All New Polygons have street-access
                 if all(y == "Right" for y in leftArea) and all(y == "Right" for y in rightArea):    #Perfectly finishes: Area is correct and Plots connect to streets
                     for x in newLeftPolys:
+                       
                         currentFinishedPolys.append(x)
                     for x in newRightPolys:
+                       
                         currentFinishedPolys.append(x)
                     count = 0
                     turnCount = 0
@@ -2560,14 +3587,15 @@ def polygonDivider(inputPolygonsAsNp,minSize = 0, maxSize = 250000, H_or_V = 1, 
                     
                     if count <= 5:
                         count += 1
-                        return polygonDivider(currentPoly, minSize, maxSize, H_or_V, mustHaveStreetConnection ,streetToConnectToAsNPVertices , randomizeH_V , force_H , force_V ,min_compactness , currentFinishedPolys,percentageOfCut+((-(percentageOfCut)+100)/2)/count , count , turnCount)
+                        return polygonDivider(currentPoly, minSize, maxSize, H_or_V, mustHaveStreetConnection ,streetToConnectToAsNPVertices , randomizeH_V , force_H , force_V ,min_compactness , currentFinishedPolys,percentageOfCut + ((100-percentageOfCut) / 2) , count , turnCount)
                     else:
                         turnCount = 0
                         count = 0
                         currentFinishedPolys.append(currentPoly[i])
                         currentPoly.pop(i)
-                        return polygonDivider(currentPoly, minSize, maxSize, H_or_V, mustHaveStreetConnection ,streetToConnectToAsNPVertices , randomizeH_V , force_H , force_V ,min_compactness , currentFinishedPolys,percentageOfCut-(percentageOfCut/2)/count , count , turnCount)
-
+                        return polygonDivider(currentPoly, minSize, maxSize, H_or_V, mustHaveStreetConnection ,streetToConnectToAsNPVertices , randomizeH_V , force_H , force_V ,min_compactness , currentFinishedPolys,percentageOfCut, count , turnCount)
+                
+                    print("exception")
 
 
         count += 1
@@ -2619,7 +3647,8 @@ def offsetNpPoly(points, offset, outer_ccw = 1):
 
     num_points = len(oldX)
 
-    newPoints = []
+    oldNewPoints = []
+
 
     for indexpoint in range(num_points):
         prev = (indexpoint + num_points -1 ) % num_points
@@ -2639,7 +3668,31 @@ def offsetNpPoly(points, offset, outer_ccw = 1):
         bisnX, bisnY = normalizeVec(bisX,  bisY)
         bislen = offset /  np.sqrt((1 + nnnX*npnX + nnnY*npnY)/2)
 
-        newPoints.append(np.array([oldX[indexpoint] + bislen * bisnX, oldY[indexpoint] + bislen * bisnY]))
+        oldNewPoints.append(np.array([oldX[indexpoint] + bislen * bisnX, oldY[indexpoint] + bislen * bisnY]))
+       
+            
+    def crossingLineKicker(points,lennewPoints):
+        newPoints = points.copy()
+        for i in range(lennewPoints):
+            if lennewPoints < 4:
+                return newPoints
+            print("I",i)
+            
+            line1 = [newPoints[i % lennewPoints],newPoints[(i+1) % lennewPoints]]
+            line2 = [newPoints[(i+2) % lennewPoints],newPoints[(i+3) % lennewPoints]]
+            if isIntersecting([line1,line2]) == True:
+                intersectPt = getIntersectPoint([line1,line2])
+                if type(intersectPt) is not np.ndarray:   
+                    return newPoints
+                newPoints.pop((i+1) % lennewPoints)
+                newPoints.pop((i+1) % lennewPoints)
+                newPoints.insert((i+1) % lennewPoints,intersectPt)
+                return crossingLineKicker(newPoints,len(newPoints))
+                
+        return newPoints
+        
+    if len(oldNewPoints)>= 4:
+        newPoints = crossingLineKicker(oldNewPoints,len(oldNewPoints))         
     return newPoints
 
 def arrangePolygonPieces(listOfPiecesAsNP, counter = 0):
@@ -2911,39 +3964,6 @@ def pointInPoly(pointAsNP,polyAsNPLines):
     else:
         return True
 
-
-############################################
-def pointInPoly(pointAsNP,polyAsNPLines):
-    pointList = pointAsNP.tolist()
-    polyNP = []
-    poly = []
-
-    for i in polyAsNPLines:
-        polyNP.append(i[0])
-    for i in polyNP:
-        poly.append(i.tolist())
-
-    if len(poly) < 3:  # not a polygon - no area
-        return False
-    
-    total = 0
-    i = 0
-    x = pointList[0]
-    y = pointList[1]
-    next = 0
-    for i in range(len(poly)):
-        next = (i + 1) % len(poly)
-        if poly[i][1] <= y < poly[next][1]:
-            if x < poly[i][0] + (y - poly[i][1]) * (poly[next][0] - poly[i][0]) / (poly[next][1] - poly[i][1]):
-                total += 1
-        elif poly[next][1] <= y < poly[i][1]:
-            if x < poly[i][0] + (y - poly[i][1]) * (poly[next][0] - poly[i][0]) / (poly[next][1] - poly[i][1]):
-                total += 1
-    if total % 2 == 0:
-        return False
-    else:
-        return True
-############################################
 def pointOnLine(pointAsNP,lineAsNP):
     # NP to List
     lineList = []
@@ -2979,7 +3999,7 @@ def pointOnLine(pointAsNP,lineAsNP):
     else:
         #Point is not on line
         return False
-############################################
+
 def pointOnLineSegment(pointAsNP, lineAsNP, threshold = 1e-3):
     p, q, r = lineAsNP[0], pointAsNP, lineAsNP[1]
     if (q[0] <= max(p[0], r[0]) + threshold and q[0] >= min(p[0], r[0]) - threshold and
@@ -2988,7 +4008,7 @@ def pointOnLineSegment(pointAsNP, lineAsNP, threshold = 1e-3):
         return True
     else:
         return False
-############################################
+
 def isIntersecting(intersectLinesAsNPList):
     class Point:
         def __init__(self, x, y):
@@ -3074,7 +4094,7 @@ def isIntersecting(intersectLinesAsNPList):
         return True
     else:
         return False
-############################################
+
 def getIntersectPoint(intersectLinesAsNPList):
     
     x1, y1 = intersectLinesAsNPList[0][0]
@@ -3110,21 +4130,21 @@ def getIntersectPoint(intersectLinesAsNPList):
     if z == 0:                          # lines are parallel
         return "False"
     return np.array([x/z, y/z])         # returns intersection point as NP-Array"""
-############################################
+
 def pointOnPolygon(pointAsNP,polygonAsNPLines):
     for i in polygonAsNPLines:
         if pointOnLineSegment(pointAsNP,i) == True:
             return True
     return False
-############################################
+
 def scaleVec(vecAsNP,newLength):
     distance = np.linalg.norm(vecAsNP)
     scale_factor = newLength / distance
     return vecAsNP * scale_factor
-############################################
+
 def normalizeNpVec(vec):
     return vec / np.linalg.norm(vec)
-############################################
+
 def mainStreetGenerator(BaseShape,InputLines): #Edit: Write exception for collinear inputlines! Write exaption for inputline that generates street segment through another inputpoint #Write exception for self-interecting Polygon!!!
     """for i in InputLines:
         for j in InputLines:
@@ -3395,7 +4415,7 @@ def mainStreetGenerator(BaseShape,InputLines): #Edit: Write exception for collin
             generatedStreets.append(currentGeneratedStreet)
 
     return generatedStreets
-############################################
+
 def splitLine(lineToSplitAsNP,splittingLineOrPointAsNP):
     if len (lineToSplitAsNP) == 2:
         if type(splittingLineOrPointAsNP) is np.ndarray and len(splittingLineOrPointAsNP) == 2:
@@ -3423,7 +4443,7 @@ def splitLine(lineToSplitAsNP,splittingLineOrPointAsNP):
             return "please only pass a single point or line as splittingLineOrPointAsNP"
     else:
         return "please only provide a single line to split"
-############################################
+
 def splitMultipleLines(linesToSplitAsNP):
     splitLines = []
     for i in linesToSplitAsNP:
@@ -3474,28 +4494,21 @@ def splitMultipleLines(linesToSplitAsNP):
                 splitLines.append([pointsInOrder[k],pointsInOrder[k+1]])
     return splitLines
 
-############################################
-def mockOffset(splitMainStreetNetworkAsListRounded):
-    return splitMainStreetNetworkAsListRounded
-def mocksecondarystreetgenerator(mockoffsetted):
-    return mockoffsetted
-def mockpreparelinesforneighborfinder(mocksecondarystreets):
-    return mocksecondarystreets
-############################################
 #Turning the generated point-list into a drawn line
-def draw_system_streets(lines):
-    for points in lines:
-        line_geom = THREE.BufferGeometry.new()
-        points = to_js(points)
-        
-        line_geom.setFromPoints( points )
+def draw_system_streets(plots):
+    for lines in plots:
+        for points in lines:
+            line_geom = THREE.BufferGeometry.new()
+            points = to_js(points)
+            
+            line_geom.setFromPoints( points )
 
-        material = THREE.LineBasicMaterial.new()
-        material.color = THREE.Color.new("rgb(0,0,0)")
-        
-        vis_line = THREE.Line.new( line_geom, material )
-        global scene
-        scene.add(vis_line)
+            material = THREE.LineBasicMaterial.new()
+            material.color = THREE.Color.new("rgb(0,0,0)")
+            
+            vis_line = THREE.Line.new( line_geom, material )
+            global scene
+            scene.add(vis_line)
 ############################################
 def draw_system_baseshape(lines):
     for points in lines:
@@ -3524,6 +4537,7 @@ def draw_system_input(lines):
         vis_line = THREE.Line.new( line_geom, material )
         global scene
         scene.add(vis_line)
+##########################################################################################
 def draw_system_substreets(plots):
     for lines in plots:
         for points in lines:
@@ -3537,605 +4551,7 @@ def draw_system_substreets(plots):
             vis_line = THREE.Line.new( line_geom, material )
             global scene
             scene.add(vis_line)
-############################################
-def mainStreetGeneratorAndDrawing():
-    global Boundary_Coords_py,Input_Road_Coords_py, OUTPUT_Mainstreet
-    BaseShapePoints=Boundary_Coords_py
-    BaseShapeLines = []
-    for i in range(len(BaseShapePoints)):
-        if i < len(BaseShapePoints)-1:
-            CurrentLine = [BaseShapePoints[i], BaseShapePoints[i+1]]
-            BaseShapeLines.append(CurrentLine)
-        else:
-            CurrentLine = [BaseShapePoints[i], BaseShapePoints[i-(len(BaseShapePoints)-1)]]
-            BaseShapeLines.append(CurrentLine)
-    
-    InputLines=Input_Road_Coords_py
-    mainStreetNetwork = mainStreetGenerator(BaseShapeLines,InputLines)
 
-    for i in BaseShapeLines:                            #Append BaseShapeLines to list of generated Streets
-        mainStreetNetwork.append(i)
-    
-    splitMainStreetNetwork = splitMultipleLines(mainStreetNetwork)   #Split List of Streets and Baseshape into lines useable by loopfinder
-    splitMainStreetNetworkAsList = []
-    splitMainStreetNetworkAsListRounded = []
-    for i in splitMainStreetNetwork:
-        tempList = [i[0].tolist(),i[1].tolist()]
-        splitMainStreetNetworkAsList.append(tempList)
-    tempList = []
-
-    for i in splitMainStreetNetworkAsList:  #Round all Points in Line-Network to 8 digits after comma so small rounding errors of the linesplitter get mitigated
-        for j in i:
-            temptemplist = [round(j[0],0),round(j[1],0)]
-            tempList.append(temptemplist)
-        splitMainStreetNetworkAsListRounded.append(tempList)
-        tempList = []
-    
-    #print("splitMainStreetNetworkAsListRounded",splitMainStreetNetworkAsListRounded)
-    subPlots = loop_finder(splitMainStreetNetworkAsListRounded)
-    OUTPUT_Mainstreet = subPlots   #Find the Loops (Plots) out of the generated street-network
-    #print("PLOTS!",subPlots)
-    #mockoffsetted = mockOffset(subPlots)     #Offset Mainstreets
-
-    #mocksecondarystreets = mocksecondarystreetgenerator(mockoffsetted)  #generate secondary streets in offsetted polygon
-
-    #mockforneighborfinder = mockpreparelinesforneighborfinder(mocksecondarystreets)     #prepare offsetted and divided polygons for neighborfinder
-
-    toplots = [[tuple(x) for x in sublist] for sublist in OUTPUT_Mainstreet]#Convert in Tuples
-
-    # neighbors = find_overlapping_plots(toplots)
-    # #print("Neighbors",neighbors)
-
-    #Transferring NumPy-Lines into Three.js for visualization
-    ThreeCurrentLine = []
-    ThreeLinesStreet = []
-    ThreeLinesBaseShape = []
-    ThreeLinesInput = []
-    
-    #BaseShape
-    for i in BaseShapeLines:
-        for j in i:
-            TempArrayToList = j.tolist()
-            ThreeVec1 = THREE.Vector2.new(TempArrayToList[0],TempArrayToList[1])
-            ThreeCurrentLine.append(ThreeVec1)
-        ThreeLinesBaseShape.append (ThreeCurrentLine)
-        ThreeCurrentLine = []
-
-    #InputLines
-    for i in InputLines:
-        for j in i:
-            TempArrayToList = j.tolist()
-            ThreeVec1 = THREE.Vector2.new(TempArrayToList[0],TempArrayToList[1])
-            ThreeCurrentLine.append(ThreeVec1)
-        ThreeLinesInput.append (ThreeCurrentLine)
-        ThreeCurrentLine = []
-
-    #GeneratedStreets
-    for i in splitMainStreetNetwork:
-        for j in i:
-            TempArrayToList = j.tolist()
-            ThreeVec1 = THREE.Vector2.new(TempArrayToList[0],TempArrayToList[1])
-            ThreeCurrentLine.append(ThreeVec1)
-        ThreeLinesStreet.append (ThreeCurrentLine)
-        ThreeCurrentLine = []
-    
-
-    draw_system_streets(ThreeLinesStreet)
-    draw_system_baseshape(ThreeLinesBaseShape)
-    draw_system_input(ThreeLinesInput)
-
-def determine_loop_direction(points):
-    n = len(points)
-    x = [p[0] for p in points]
-    y = [p[1] for p in points]
-    a = sum(x[i]*y[(i+1)%n] - x[(i+1)%n]*y[i] for i in range(n))
-    return "Counterclockwise" if a > 0 else "Clockwise"
-
-##########################################################################################
-def calculate_angle(line1, line2):
-    x1, y1 = line1[1][0] - line1[0][0], line1[1][1] - line1[0][1]
-    x2, y2 = line2[1][0] - line2[0][0], line2[1][1] - line2[0][1]
-    return math.atan2(x1*y2 - y1*x2, x1*x2 + y1*y2)
-##########################################################################################
-def sharpest_right_turn(angles):
-    
-    angles_in_radians = [math.radians(angle) for angle in angles]
-    right_turn_angles = []
-    for i in range(len(angles_in_radians)):
-        right_turn_angles.append(angles_in_radians[i])
-    max_turn_index = right_turn_angles.index(min(right_turn_angles))
-    return max_turn_index
-
-def loop_finder(INPUT_LINES):
-
-    """
-    Given a list of lines represented as pairs of points, this function finds all loops in the lines.
-    A loop is defined as a series of lines where the endpoint of one line is the startpoint of the next line, and the endpoint of the last line is the startpoint of the first line.
-    The function returns a list of loops, with each loop represented as a list of points in the order they are encountered in the loop.
-    :param INPUT_LINES: list of lines represented as pairs of points
-    :return: list of loops, each represented as a list of points
-    """
-    Loops=[]
-    
-    for current_line in INPUT_LINES: 
-        Loop=[]
-        Loop.append(current_line[0])
-        Loop.append(current_line[1])
-
-        connecting_lines=[]
-        flipped_connector=[]
-        # line is  a connecting line, but not itself
-        
-        for line in INPUT_LINES:
-            if line [0] == current_line[1] and line != current_line:
-                connecting_lines.append(line)
-            if line [1] == current_line[1] and line != current_line:
-                flipped_connector=[]
-                flipped_connector.append(line[1])
-                flipped_connector.append(line[0])
-                connecting_lines.append(flipped_connector)
-            
-        
-
-        if len(connecting_lines) >=1:
-            connecting_angles = []
-            for neigbhor in connecting_lines:
-                angle = calculate_angle(current_line, neigbhor)           
-                connecting_angles.append(math.degrees(angle))
-            next_line_index= sharpest_right_turn(connecting_angles)
-            next_line = connecting_lines[next_line_index]
-            Loop.append(next_line[1])
-        
-        while Loop[-1] != Loop[0]:
-            
-            Next_connecting_lines=[]
-            for line in INPUT_LINES:  
-                if line == next_line or line[1] == next_line[0] and line[0] == next_line[1]:
-                    pass
-                else:
-                    if line [0] == Loop[-1] :
-                            Next_connecting_lines.append(line)
-                    
-                    if line [1] == Loop[-1] :
-                            flipped_connector=[]
-                            flipped_connector.append(line[1])
-                            flipped_connector.append(line[0])
-                            Next_connecting_lines.append(flipped_connector)
-
-            
-            if len(Next_connecting_lines) >=1:
-                next_connecting_angles =[]
-                for next_neigbhor in Next_connecting_lines:
-                    angle = calculate_angle(next_line, next_neigbhor)           
-                    next_connecting_angles.append(math.degrees(angle))
-                next_line_index= sharpest_right_turn(next_connecting_angles)
-                next_line = Next_connecting_lines[next_line_index]
-                Loop.append(next_line[1])
-                if Loop.count(next_line[1]) == 2:
-                    break
-            else:
-                Loop=[]
-                break
-        if len(Loop) >=1:    
-            Loop.pop(-1)   #delete double coordinate
-
-        direction = determine_loop_direction(Loop)
-        if direction== "Clockwise":
-            if len(Loop) >=1:  
-                Loops.append(Loop)
-        if direction== "Counterclockwise":
-            Loop=[]
-            FlippedStart=[]
-            FlippedStart.append(current_line[1])
-            FlippedStart.append(current_line[0])
-            INPUT_LINES.append(FlippedStart)
-    new_loops = []
-    for sublist in Loops:
-        is_duplicate = False
-        for other_sublist in new_loops:
-            if set(map(tuple,sublist)) <= set(map(tuple,other_sublist)):
-                is_duplicate = True
-                break
-        if not is_duplicate:
-            new_loops.append(sublist)
-    Loops = new_loops              #Loops is now the cleaned up version of itself
-
-
-
-
-    return Loops
-##########################################################################################
-def find_overlapping_plots(plots):
-    # Create a dictionary to store the mapping from plot number to overlapping plots
-    plot_overlaps = {}
-    # Iterate over each plot
-    for i, plot in enumerate(plots):
-        # Initialize an empty list to store the overlapping plots for this plot
-        overlaps = []
-        # Iterate over the other plots
-        for j, other_plot in enumerate(plots):
-            # Skip the current plot
-            if i == j:
-                continue
-            # Check if the current plot has 2 or more coordinates in common with the other plot
-            common_coords = set(plot).intersection(set(other_plot))
-            if len(common_coords) >= 2:
-                overlaps.append(j)
-        # Add the mapping from plot number to overlapping plots to the dictionary
-        plot_overlaps[i] = overlaps
-    # Create a list of tuples (plot number, overlapping plots) from the dictionary
-    result = [(plot, overlaps) for plot, overlaps in plot_overlaps.items()]
-    return result
-##########################################################################################
-def convert_data(list_neighbours: list[list[int, list[int]]]) -> dict:
-    """
-    Converts the data from a list to a dictionary.
-    """
-    # Initialize the dictionary
-    dictionary = {}
-
-    # Loop through the plots
-    for plot, neighbours in list_neighbours:
-
-        # Add the plot to the dictionary
-        dictionary[plot] = {'value': None, 'neighbours': neighbours}
-    return dictionary
-##########################################################################################
-def random_distribution(dictionary: dict) -> dict:
-    
-    """
-    Randomly assign a value to each plot and checks if the rules are
-    respected.
-    """
-    # Declare the possible values
-    weights=[]
-    modified_val_l = 110-input_param.LivingIndustrial
-    weights.append(modified_val_l)
-    modified_val_i = input_param.LivingIndustrial
-    weights.append(modified_val_i)
-    modified_val_g = (110-input_param.LivingIndustrial+55)/2
-    weights.append(modified_val_g)
-    modified_val_o = (input_param.LivingIndustrial+55)/2
-    if modified_val_o<55:
-        modified_val_o=modified_val_o/2 
-    weights.append(modified_val_o)
-    modified_val_e = 100
-    weights.append(modified_val_e)
-    
-    values = ['L', 'I', 'G', 'O', 'E']
-    #weights = [20, 20, 20, 20, 20]
-    L_Count=0
-    I_Count=0
-    G_Count=0
-    O_Count=0
-    E_Count=0
-    
-    # Get the first plot in the dictionary
-    first_plot = list(dictionary.keys())[0]
-
-    # Choose a random value from the list of possible values
-    value = choice(['L', 'I', 'G', 'O', 'E'])
-    VALID_VALUES=[]
-    # Assign the random value to the first plot and change possible Neighbor Values accordingly
-    dictionary[first_plot]['value'] = value
-    combined_plots = {}
-    for neighbor in dictionary[first_plot]['neighbours']:
-        if dictionary[first_plot]['value'] == 'L':
-                        while "I" in values:
-                            index= values.index("I")
-                            if index < len(values):
-                                values.pop(index)
-                                weights.pop(index)
-        elif dictionary[first_plot]['value'] == 'I':
-            while "L" in values:
-                index= values.index("L")
-                if index < len(values):
-                    values.pop(index)
-                    weights.pop(index)
-            while "E" in values:
-                index= values.index("E")
-                if index < len(values):
-                    values.pop(index)
-                    weights.pop(index)
-        #elif dictionary[first_plot]['value'] == 'G':
-            # while "G" in values:
-            #     index= values.index("G")
-            #     if index < len(values):
-            #         values.pop(index)
-            #         weights.pop(index)
-        if L_Count >= 4:
-            while "L" in values:
-                index= values.index("L")
-                if index < len(values):
-                    values.pop(index)
-                    weights.pop(index)
-        if I_Count >= 4:
-            while "I" in values:
-                index= values.index("I")
-                if index < len(values):
-                    values.pop(index)
-                    weights.pop(index)
-        if G_Count >= 4:
-            while "G" in values:
-                index= values.index("G")
-                if index < len(values):
-                    values.pop(index)
-                    weights.pop(index)
-        if O_Count >= 4:
-            while "O" in values:
-                index= values.index("O")
-                if index < len(values):
-                    values.pop(index)
-                    weights.pop(index)
-        if E_Count >= input_param.population//3000:
-            while "E" in values:
-                index= values.index("E")
-                if index < len(values):
-                    values.pop(index)
-                    weights.pop(index)
-
-        
-        
-        valid_vals= ([neighbor],values,weights)
-        VALID_VALUES.append(valid_vals)
-    VALID_VALUES_NO_DOUBLES = []
-        
-            
-    visited=[0]
-
-    if value=="L":
-        L_Count=L_Count+1                    
-        
-    elif value=="I":
-        I_Count=I_Count+1
-        
-    elif value=="G":
-        G_Count=G_Count+1
-        
-    elif value=="O":
-        O_Count=O_Count+1
-        
-    elif value=="E":
-        E_Count=E_Count+1
-    
-    
-    for i in VALID_VALUES:
-                if i not in VALID_VALUES_NO_DOUBLES:
-                    VALID_VALUES_NO_DOUBLES.append(i)
-    for plot in VALID_VALUES_NO_DOUBLES:
-            plot_num, possible_values, weights = plot
-            plot_num = plot_num[0]
-            indices = range(len(possible_values))
-            if plot_num in combined_plots:
-                current_values, current_weights= combined_plots[plot_num]
-                combined_values = set(current_values) & set(possible_values)
-                combined_indices = [i for i in indices if possible_values[i] in combined_values]
-                combined_weights = [weights[i] for i in combined_indices]
-                combined_plots[plot_num] = (list(combined_values), combined_weights)
-            else:
-                combined_plots[plot_num] = (possible_values, weights)
-    combined_plots = {key: value for key, value in combined_plots.items() if key not in visited}
-    sorted_dict = dict(sorted(combined_plots.items(), key=lambda x: len(x[1][0])))
-    
-    # Assign the value to the plot
-    # dictionary[neighbor]['value'] = value
-
-    values = ['L', 'I', 'G', 'O', 'E']
-    # Declare the possible values
-    weights=[]
-    modified_val_l = 110-input_param.LivingIndustrial
-    weights.append(modified_val_l)
-    modified_val_i = input_param.LivingIndustrial
-    weights.append(modified_val_i)
-    modified_val_g = (110-input_param.LivingIndustrial+55)/2
-    weights.append(modified_val_g)
-    modified_val_o = (input_param.LivingIndustrial+55)/2
-    if modified_val_o<55:
-        modified_val_o=modified_val_o/2 
-    weights.append(modified_val_o)
-    modified_val_e = 100
-    weights.append(modified_val_e)
-    #weights = [20, 20, 20, 20, 20]
-        
-    
-
-    
-    # plots_sorted = []
-    # for plot in dictionary.keys():
-    #     remaining_values = 5 - len(values)
-    #     plots_sorted.append((plot, remaining_values))
-    # plots_sorted.sort(key=lambda x: x[1])
-    #print("PLOTS_SORTED_WEIRD",sorted_dict)
-    
-
-    # Loop through the plots
-    while combined_plots != {}:
-        for plot in sorted_dict:
-            if plot>0:
-                visited.append(plot)
-                
-                # Check the values of the neighbors
-                for neighbor in dictionary[plot]['neighbours']:
-                    # if dictionary[neighbor]['value'] == 'G':
-                    #     while "G" in values:
-                    #         index= values.index("G")
-                    #         if index < len(values):
-                    #             values.pop(index)
-                    #             weights.pop(index)
-                    # elif dictionary[neighbor]['value'] == 'C':
-                    #     while "I" in values:
-                    #         index= values.index("I")
-                    #         if index < len(values):
-                    #             values.pop(index)
-                    #             weights.pop(index)
-                    if dictionary[neighbor]['value'] == 'L':
-                        while "I" in values:
-                            index= values.index("I")
-                            if index < len(values):
-                                values.pop(index)
-                                weights.pop(index)
-                    elif dictionary[neighbor]['value'] == 'I':
-                        while "L" in values:
-                            index= values.index("L")
-                            if index < len(values):
-                                values.pop(index)
-                                weights.pop(index)
-                        # while "C" in values:
-                        #     index= values.index("C")
-                        #     if index < len(values):
-                        #         values.pop(index)
-                        #         weights.pop(index)
-                        # while "P" in values:
-                        #     index= values.index("P")
-                        #     if index < len(values):
-                        #         values.pop(index)
-                        #         weights.pop(index)
-                    elif dictionary[neighbor]['value'] == 'E':
-                        while "I" in values:
-                            index= values.index("I")
-                            if index < len(values):
-                                values.pop(index)
-                                weights.pop(index)
-                    if L_Count >= 4:
-                        while "L" in values:
-                            index= values.index("L")
-                            if index < len(values):
-                                values.pop(index)
-                                weights.pop(index)
-                    if I_Count >= 4:
-                        while "C" in values:
-                            index= values.index("I")
-                            if index < len(values):
-                                values.pop(index)
-                                weights.pop(index)
-                    if G_Count >= 4:
-                        while "G" in values:
-                            index= values.index("G")
-                            if index < len(values):
-                                values.pop(index)
-                                weights.pop(index)
-                    if O_Count >= 4:
-                        while "O" in values:
-                            index= values.index("O")
-                            if index < len(values):
-                                values.pop(index)
-                                weights.pop(index)
-                    if E_Count >= input_param.population//3000:
-                        while "E" in values:
-                            index= values.index("E")
-                            if index < len(values):
-                                values.pop(index)
-                                weights.pop(index)
-                
-                    
-                    valid_vals= ([neighbor],values,weights)
-                    VALID_VALUES.append(valid_vals)
-
-            # Assign a value to the plot, using weighted probability
-            if(len(values))>=1:
-                value = choices(values, weights=weights, k=1)[0]
-                
-                # Assign the value to the plot
-                dictionary[plot]['value'] = value
-                
-
-            else:
-                for plot in dictionary.keys():
-                    # Set the value to None
-                    
-                    dictionary[plot]['value'] = None
-                return False 
-            
-            for i in VALID_VALUES: ###################################################### List operations for combining different possibilities when checking from a different neigbor
-                    if i not in VALID_VALUES_NO_DOUBLES:
-                        VALID_VALUES_NO_DOUBLES.append(i)
-            for plot in VALID_VALUES_NO_DOUBLES:
-                    plot_num, possible_values, weights = plot
-                    plot_num = plot_num[0]
-                    indices = range(len(possible_values))
-                    if plot_num in combined_plots:
-                        current_values, current_weights= combined_plots[plot_num]
-                        combined_values = set(current_values) & set(possible_values)
-                        combined_indices = [i for i in indices if possible_values[i] in combined_values]
-                        combined_weights = [weights[i] for i in combined_indices]
-                        combined_plots[plot_num] = (list(combined_values), combined_weights)
-                    else:
-                        combined_plots[plot_num] = (possible_values, weights)
-            values = ['L', 'I', 'G', 'O', 'E']    ##############################reset weights and Values
-            # Declare the possible values
-            weights=[]
-            modified_val_l = 110-input_param.LivingIndustrial
-            weights.append(modified_val_l)
-            modified_val_i = input_param.LivingIndustrial
-            weights.append(modified_val_i)
-            modified_val_g = (110-input_param.LivingIndustrial+55)/2
-            weights.append(modified_val_g)
-            modified_val_o = (input_param.LivingIndustrial+55)/2
-            if modified_val_o<55:
-                modified_val_o=modified_val_o/2    
-            weights.append(modified_val_o)
-            modified_val_e = 100
-            weights.append(modified_val_e)
-                    
-            #weights = [20, 20, 20, 20, 20]
-                    
-            combined_plots_all = {key: value for key, value in combined_plots.items()}################################# A list with all possible values for all Plots
-            sorted_dict_all = dict(sorted(combined_plots_all.items(), key=lambda x: len(x[1][0])))
-            #print("Options_if_changes_neccessary:",sorted_dict_all)       
-            
-            combined_plots = {key: value for key, value in combined_plots.items() if key not in visited}############### A list with all possible values for all Plots that havnt been assigned yet
-            sorted_dict = dict(sorted(combined_plots.items(), key=lambda x: len(x[1][0])))
-            
-            ############### Count the assignment Values
-            if value=="L":  
-                L_Count=L_Count+1                    
-                
-            elif value=="I":
-                I_Count=I_Count+1
-                
-            elif value=="G":
-                G_Count=G_Count+1
-                
-            elif value=="O":
-                O_Count=O_Count+1
-                
-            elif value=="E":
-                E_Count=E_Count+1
-   
-    print("LCount",L_Count)
-    print("ICount",I_Count)  
-    print("GCount",G_Count)  
-    print("OCount",O_Count)  
-    print("ECount",E_Count)  
-    # print(C_Count)     
-    # print(R_Count) 
-    # print(I_Count) 
-    # print(P_Count)
-    #print("visited",visited)
-    return dictionary, sorted_dict_all
-##########################################################################################
-def find_solution(dictionary: dict,
-                max_time: float = 30) -> dict:
-    """
-    Generates solutions until a valid one is found or the time limit.
-    is reached.
-    """
-    # Initialize the answer and the time
-    answer, start = {}, time()
-
-    # Set the stopping condition
-    while answer == {} and (time() - start) < max_time:
-
-        # Get a potential solution
-        answer = random_distribution(dictionary)
-
-    if answer == False:
-        find_solution(dictionary,5)
-    else:
-        return answer
-##########################################################################################
-##########################################################################################
-##########################################################################################
 lines=[
 [[0, 0],[ 2, 2]],#Input Lines
 [[2, 2], [2, 0]], 
@@ -4209,13 +4625,13 @@ def render(*args):
     updateI()
     updateO ()
     updateL ()
-  
     
-    global composer
+  
     controls.update()
+    
     composer.render()
 
-# Graphical post-processing
+
 
 
 
