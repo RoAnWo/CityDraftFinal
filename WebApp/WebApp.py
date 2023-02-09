@@ -605,13 +605,17 @@ def generateSecondaryStreets(inputForSecondaryStreets):     #Function that handl
 
     oldSubPlots = []
     for i in offsettedSubplotsAsNP:
-        oldSubPlots.append(polygonDivider(i,600,7000,1,True, i))   #The actual "Secondary Street Generator"
+        oldSubPlots.append(polygonDivider(i,600,3000,1,True, i))   #The actual "Secondary Street Generator"
     
+
+
     subPlots = addEveryPointToEveryPoly(oldSubPlots)
 
+
+
     untranslatedSubplots = []
-    for i in range(len(subPlots)):
-        for k in subPlots[i]:
+    for i in range(len(oldSubPlots)):
+        for k in oldSubPlots[i]:
             untranslatedSubplots.append(k)         #DO NOT USE, BUGGY, IDK WHY
 
     untranslatedSubplotsAsList = []
@@ -891,7 +895,8 @@ def generatePlotsAndAssign(normalplots, translatedplots):
     # POSSIBLE_CHANGES=random_distribution(DICTIONARY)
     
     colorPlots()
-   
+    # print ("Distribution",DISTRIBUTION)
+    # print("Dictionary", DICTIONARY)
 
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1075,7 +1080,7 @@ def generateI():
             #loop_check_angle(PLOTS)
         
             Boundary = PlotsNumpy[i]
-           
+            #print("Boundary", Boundary)
             linesI, meshesI, planeI, areaplot = offsetAndGenerateShapeI(Boundary,input_param.distancestreetI, THREE.Color.new("rgb(180,180,180)"), THREE.Color.new("rgb(150,150,150)"),  THREE.Color.new("rgb(150,150,150)"),1, input_param.height)
             
             areaIndustrials += areaplot
@@ -1098,7 +1103,7 @@ def generateO():
             #loop_check_angle(PLOTS)
         
             Boundary = PlotsNumpy[i]
-         
+            AreaperPlot=1
             linesO, meshesO, PeoplePerPlot, AreaperPlot = offsetAndGenerateShapeO(Boundary,THREE.Color.new("rgb(218,235,235)"), THREE.Color.new("rgb(161,173,173)"),  THREE.Color.new("rgb(161,173,173)"), input_param.heightperfloorO)
             
            
@@ -1314,11 +1319,14 @@ def calculatetype(dict_sorted, density ,population, maxpopul):
             area_all = area_all - currentArea
             area_all = area_all + builtarea_per_plot
             population_possible = area_all//30
+            #print("i",i, "area_all",area_all,"current_Area",currentArea, "population_possible", population_possible)
             
             if population_possible >= maxpopul*input_param.population:
+                #print("choose_type return 1", choose_type)
                 return area_all
         
         choose_type += 1
+        #print("choose_type return 2", choose_type)   
     return area_all      
 
 def calcB (arraypoints):
@@ -1342,6 +1350,7 @@ def calcB (arraypoints):
     points_check2 = convert_into_Points(OffsetX, OffsetY)
     
     if determine_loop_direction(points_check2) == "Counterclockwise":
+       # print( "changed value outer")
         offsetvalueouter = 0
 
         
@@ -1353,21 +1362,24 @@ def calcB (arraypoints):
     boundarylengths = lengthBoundary(OffsetX, OffsetY)
 
     
-    if min(boundarylengths)<= 15:
+    # if min(boundarylengths)<= 15:
         
-        return(areaOuterBoundary, newOuterboundary,0)
+    #     return(areaOuterBoundary, newOuterboundary,0)
     
     
-    offsetvalue = 3.5
-    while min(boundarylengths) > 15:
+    offsetvalue = 2.5
+    while min(boundarylengths) > 15 or offsetvalue <=4 :###########################CHANGES ROBERT
         
         Oldoffset = offsetvalue
+        #print("Oldoffset", Oldoffset)
 
         offsetvalue += 0.5
         
         offsetPolyBBB = offsetNpPoly(newOuterboundary, offsetvalue)
         Offset2X, Offset2Y = generatexy(offsetPolyBBB)
         boundarylengths = lengthBoundary(Offset2X, Offset2Y)
+        #print("boundarylengths", min(boundarylengths))
+        #print (Offset2X)
         Points_2_check = convert_into_Points(Offset2X, Offset2Y)
     
         if min(Offset2X) == min(OffsetX) or determine_loop_direction(Points_2_check) == "Counterclockwise":
@@ -1426,14 +1438,16 @@ def calcH(arraypoints, minlengthbl):
             #check distance of intersectes points and offsets plot if possible
             boundarylengths = lengthBoundary(Xcoordinatesb, Ycoordinatesb)
 
-            while min(boundarylengths) > minlengthbl:  
+            while min(boundarylengths) > minlengthbl :  
                 
                 Oldoffset = offsetvalue
                     
                 offsetvalue += 1
+                # print("i", i)
                 offsetpoly = offsetNpPoly(i,offsetvalue)
                 OffsetX, OffsetY = generatexy(offsetpoly)
                 boundarylengths = lengthBoundary(OffsetX, OffsetY)
+                #print("boundarylengths", min(boundarylengths))
                 
                 Points_2_check = convert_into_Points(OffsetX, OffsetY)
                 
@@ -1442,6 +1456,7 @@ def calcH(arraypoints, minlengthbl):
                     oldoffsetpoly = offsetNpPoly(i, Oldoffset)
                     
                     areaPlotvalidR = Area(oldoffsetpoly)
+                    #print("Oldoffset", Oldoffset)
                     offsetvalue = Oldoffset
                     break 
             
@@ -1457,6 +1472,7 @@ def calcH(arraypoints, minlengthbl):
         for area in areaPlotfinal:
             areaR += area
         
+        #print("areaR", areaR)
         return areaR, dividedPoly, OffsetListdividedPoly
     
 def calc(arraypoints, minboundarylength):
@@ -1466,7 +1482,7 @@ def calc(arraypoints, minboundarylength):
     #check distance of intersectes points and offsets plot if possible
     boundarylengths = lengthBoundary(Xcoordinatesb, Ycoordinatesb)
     
-    while min(boundarylengths) > minboundarylength:  
+    while offsetvalue < 5:  
         
         Oldoffset = offsetvalue
         
@@ -1476,6 +1492,7 @@ def calc(arraypoints, minboundarylength):
         offsetpolyC = offsetNpPoly(arraypoints,offsetvalue)
         OffsetX, OffsetY= generatexy(offsetpolyC)
         boundarylengths = lengthBoundary(OffsetX, OffsetY)
+        #print("boundarylengths", min(boundarylengths))
         
         Points_2_check = convert_into_Points(OffsetX, OffsetY)
         
@@ -1544,7 +1561,7 @@ def B(arraypoints, colorm, colorl, colorp, floors, heightperfloor):
     length = lengthBoundary( xCoordB, yCoordB)
     xCoordBF, yCoordBF = makeFloatfromPoint(xCoordB, yCoordB) 
     
-    if Offsetv == 0 or min (length)< 8:
+    if  min (length)< 8:
 
         plane1 = plane(xCoordBF, yCoordBF,colorp)
         meshes_listB, lines_listB = generateShape(xCoordBF,yCoordBF,colorm,colorl, floors, heightperfloor )
@@ -1569,8 +1586,11 @@ def H(arraypoints, floors, heightperfloor):
     linesRfinal = []
     
     area, dividedboundary, dividedoffset = calcH(arraypoints, 10)
+    #print("dividedboundary", dividedboundary)
+    #print("dividedoffset", dividedoffset)
     
     
+   # print("len(dividedboundary)", len(dividedboundary))
     length = len(dividedboundary)
     
     for i in range(0, length):
@@ -1661,6 +1681,7 @@ def generateTypeL (dict_sorted, offsetR, offsetH, heightperfloorR, heightperfloo
     greenP = []
     
     for i in dict_sorted.keys():
+            #print("typus", dict_sorted[i]['Plotobject']. get_area_type())
             
             if dict_sorted[i]['Plotobject']. get_area_type() == 0:
                 greenP = G(dict_sorted[i]['Plotobject'].get_outerboundary(), THREE.Color.new("rgb(138,158,134)"))
@@ -1714,6 +1735,7 @@ def offsetAndGenerateShapeO(arraypoints, colorm, colorl, colorp , heightperfloor
     newOuterboundary = offsetallplots5(arraypoints)
     Xcoordinates, Ycoordinates = generatexy(newOuterboundary)
     xCoordB, yCoordB = makeFloatfromPoint( Xcoordinates, Ycoordinates)
+    #print("newOuterboundary", newOuterboundary)
     offsetvalue = calc(newOuterboundary, 15)
     
     floor = (offsetvalue*2)/heightperfloor
@@ -1758,9 +1780,9 @@ def offsetAndGenerateShapeI(arraypoints, offsetvalue, colorm, colorl, colorp , f
     
     areadividedplots = []
     for i in dividedPoly: 
-        
-        areaperplot =  Area(i)
-        areadividedplots.append(areaperplot)
+        print("dividedPoly",dividedPoly)
+        area_per_plot =  Area(i)
+        areadividedplots.append(area_per_plot)
 
     j = areadividedplots.index(max(areadividedplots))
     
@@ -1799,6 +1821,7 @@ def offsetAndGenerateShapeI(arraypoints, offsetvalue, colorm, colorl, colorp , f
     
         return meshesI, linesI, plane1, arePerPlot
         
+
 def offsetallplots5(arraypoints):
 
     
@@ -2070,6 +2093,7 @@ def generateNumpyArray (plotboundaries):
         temp_list=[]
       
     SUB_SUB_NUMPY = [[np.array(k) for k in i] for i in plotboundaries]
+    # print("biggerscale", SUB_SUB_NUMPY)
     
     return SUB_SUB_NUMPY
 
@@ -2230,10 +2254,12 @@ def makeOffsetPolyOuter(oldX, oldY, offset, outer_ccw = 1):
        
         makeOffsetPolyOuter(newX, newY, offset, 1)
        
+        #print ("newX1, newY1")
         return newX, newY
         
     
     else:
+        #print("newX1, newY1", "newX1, newY1")
         return newX, newY
 
 def isIntersectingWithoutEndpoints(intersectLinesAsNPList):
@@ -2344,7 +2370,7 @@ def isSelfIntersect(polyVerticesAsNP):
     return False
              
 def lengthBoundary(xcoord, ycoord):
-   
+    #print("xcoordoffset", xcoord)
 
     global LengthList
     LengthList = []
@@ -2360,20 +2386,21 @@ def loop_check_angle(arraypoints):
     
     
     for current_line in arraylines: 
-        
+        #print(current_line[0])
         
         startline = current_line[0]
-       
+       # print("startline", startline)
         next_line = current_line[1]
         
         angle = calculate_angle(startline, next_line)
-      
+       # print ("angle" , math.degrees(angle))
         
         if math.degrees(angle) > 90:
             arraylines.pop(current_line[0])  
             # arraylines.remove(next_line) 
                
     
+    #print ("arraylines", arraylines)
     return arraylines
 
 
@@ -2667,9 +2694,9 @@ def on_dbl_click(event):
         curve_material.color = THREE.Color.new("rgb(100,100,100)")
        
         console.log("Boundary_COORDS", Boundary_Coords_py)
-       
+       # print("Boundary_COORDS", Boundary_Coords_py)
         console.log("Road_COORDS", Input_Road_Coords_py)
-        
+      #  print("Road_COORDS", Input_Road_Coords_py)
     scene.remove(curve_object)
     scene.remove(curve_object_road)
     update_Boundary()
@@ -2992,6 +3019,14 @@ def random_distribution(dictionary: dict) -> dict:
         
     
 
+    
+    # plots_sorted = []
+    # for plot in dictionary.keys():
+    #     remaining_values = 5 - len(values)
+    #     plots_sorted.append((plot, remaining_values))
+    # plots_sorted.sort(key=lambda x: x[1])
+    #print("PLOTS_SORTED_WEIRD",sorted_dict)
+    
 
     # Loop through the plots
     while combined_plots != {}:
@@ -3122,9 +3157,11 @@ def random_distribution(dictionary: dict) -> dict:
             modified_val_e = 100
             weights.append(modified_val_e)
                     
+            #weights = [20, 20, 20, 20, 20]
                     
             combined_plots_all = {key: value for key, value in combined_plots.items()}################################# A list with all possible values for all Plots
             sorted_dict_all = dict(sorted(combined_plots_all.items(), key=lambda x: len(x[1][0])))
+            #print("Options_if_changes_neccessary:",sorted_dict_all)       
             
             combined_plots = {key: value for key, value in combined_plots.items() if key not in visited}############### A list with all possible values for all Plots that havnt been assigned yet
             sorted_dict = dict(sorted(combined_plots.items(), key=lambda x: len(x[1][0])))
@@ -3150,7 +3187,11 @@ def random_distribution(dictionary: dict) -> dict:
     # print("GCount",G_Count)  
     # print("OCount",O_Count)  
     # print("ECount",E_Count)  
-   
+    # print(C_Count)     
+    # print(R_Count) 
+    # print(I_Count) 
+    # print(P_Count)
+    #print("visited",visited)
     return dictionary
 ##########################################################################################
 def find_solution(dictionary: dict,
@@ -3167,6 +3208,7 @@ def find_solution(dictionary: dict,
 
         # Get a potential solution
         answer = random_distribution(dictionary)
+        print(answer)
 
     if answer == False:
         find_solution(dictionary,5)
@@ -3222,6 +3264,7 @@ def polygonDivider(inputPolygonsAsNp,minSize = 0, maxSize = 250000, H_or_V = 1, 
     
     for i in range(len(currentPoly)):   #   For every "open" polygon that still needs processing
         
+        #print("INPUTINSPLIT", currentPoly[i],cutDir,percentageOfCut)
         splitPoly = polygonSplit(currentPoly[i],cutDir,percentageOfCut)
         newLeftPolys = splitPoly[0]
         newRightPolys = splitPoly[1]
@@ -3444,6 +3487,7 @@ def polygonDivider(inputPolygonsAsNp,minSize = 0, maxSize = 250000, H_or_V = 1, 
                             return polygonDivider(currentPoly, minSize, maxSize, H_or_V, mustHaveStreetConnection ,streetToConnectToAsNPVertices , randomizeH_V , force_H , force_V ,min_compactness , currentFinishedPolys,percentageOfCut, count , turnCount)
                     except:
                         pass
+                        #print("exception")
 
 
         count += 1
@@ -3534,8 +3578,11 @@ def offsetNpPoly(points, offset, outer_ccw = 1):
                 if type(intersectPt) is not np.ndarray:   
                     return newPoints
                 newPoints.pop((i+1) % lennewPoints)
+                lennewPoints = len(newPoints)
                 newPoints.pop((i+1) % lennewPoints)
+                lennewPoints = len(newPoints)
                 newPoints.insert((i+1) % lennewPoints,intersectPt)
+                lennewPoints = len(newPoints)
                 return crossingLineKicker(newPoints,len(newPoints))
                 
         return newPoints
