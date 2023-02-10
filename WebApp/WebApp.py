@@ -289,24 +289,38 @@ def main():
 
 def Info_Table():
     
-    global maxpopulation, areaLiving, workingpeople, areaIndustrials, Greenareaperperson, areaGreenAll, areaOffices, areaEducationAll
+    global maxpopulation, areaLiving, workingpeople, areaIndustrials, Greenareaperperson, areaGreenAll, areaOffices, areaEducationAll, volumeoffice, volumIndustrial, volumeLiving
     
     if areaGreenAll == None:
         areaGreenAll = 0
-    
     areaGreenAll = round(areaGreenAll)
-    
-    
+
+    if Greenareaperperson == None:
+        Greenareaperperson = 0
     Greenareaperperson = round(Greenareaperperson)
+    
+    if volumeLiving == None:
+        volumeLiving = 0
+    volumeLiving = round(volumeLiving)    
+    
+    if workingpeople == None:
+        workingpeople = 0
+    workingpeople = round(workingpeople)
+    
+    # if 'volumeoffice'  in globals():
+    if volumeoffice == None:
+        volumeoffice = 0
+    volumeoffice = round(volumeoffice)
+    
+    if volumIndustrial == None:
+        volumIndustrial = 0
+    volumIndustrial = round(volumIndustrial)
     
     population = maxpopulation*input_param.population
     population = round(population)
-    workingpeople = round(workingpeople)
-    
     LivingSpacepp = 30
-    LivingVol = 4
-    IndusVol_var = 6
-    OfficeVol_var = 10
+   
+    
     
     body = js.document.getElementsByTagName('body')[0]
     
@@ -362,7 +376,7 @@ def Info_Table():
 
     Living_vol = js.document.createElement('p')
     Living_vol_span = js.document.createElement('span')
-    Living_vol_span.textContent = str(LivingVol)+" m³"
+    Living_vol_span.textContent = str(volumeLiving)+" m³"
     Living_vol_span.className = "Living_vol-span"
     Living_vol.appendChild(js.document.createTextNode("Built Living Volume: "))
     Living_vol.appendChild(Living_vol_span)
@@ -381,7 +395,7 @@ def Info_Table():
 
     Indus_Vol = js.document.createElement('p')
     Indus_Vol_span = js.document.createElement('span')
-    Indus_Vol_span.textContent = str(IndusVol_var)+" m³"
+    Indus_Vol_span.textContent = str(volumIndustrial)+" m³"
     Indus_Vol_span.className = "IndusVol-span"
     Indus_Vol.appendChild(js.document.createTextNode("Built Industrial Volume: "))
     Indus_Vol.appendChild(Indus_Vol_span)
@@ -401,7 +415,7 @@ def Info_Table():
 
     Offi_Vol = js.document.createElement('p')
     Offi_Vol_span = js.document.createElement('span')
-    Offi_Vol_span.textContent = str(OfficeVol_var)+" m³"
+    Offi_Vol_span.textContent = str(volumeoffice)+" m³"
     Offi_Vol_span.className = "OffiVol-span"
     Offi_Vol.appendChild(js.document.createTextNode("Built Office Volume: "))
     Offi_Vol.appendChild(Offi_Vol_span)
@@ -1069,11 +1083,12 @@ def generateL ():
     meshesfinal_listL, linesfinal_listL, groundsfinal, greenPG = generateTypeL(dict_sorted, input_param.offsetR, input_param.offsetH, input_param.heightperfloorR, input_param.heightperfloorB, input_param.heightperfloorH, input_param.population, input_param.density)
 
 def generateI():
-    global meshfinal_list2, linefinal_list2, meshplaneI, areaIndustrials
+    global meshfinal_list2, linefinal_list2, meshplaneI, areaIndustrials, volumIndustrial
     meshfinal_list2 = []
     linefinal_list2 = []
     meshplaneI = []
     
+    volumIndustrial = 0
     areaIndustrials = 0
     for i in DICTIONARY.keys():
         if DICTIONARY[i]['value'] == "I":
@@ -1084,18 +1099,21 @@ def generateI():
             linesI, meshesI, planeI, areaplot = offsetAndGenerateShapeI(Boundary,input_param.distancestreetI, THREE.Color.new("rgb(180,180,180)"), THREE.Color.new("rgb(150,150,150)"),  THREE.Color.new("rgb(150,150,150)"),1, input_param.height)
             
             areaIndustrials += areaplot
+            volumperplot = areaplot*input_param.height
+            volumIndustrial += volumperplot
             
             linefinal_list2.append(linesI)
             meshfinal_list2.append(meshesI)
             meshplaneI.append(planeI)
     
-    return areaIndustrials
+    return areaIndustrials, volumIndustrial
 
 def generateO():
-    global meshO_list2, lineO_list2, workingpeople, areaOffices
+    global meshO_list2, lineO_list2, workingpeople, areaOffices, volumeoffice
     meshO_list2 = []
     lineO_list2 = []
     
+    volumeoffice = 0
     workingpeople = 0
     areaOffices = 0
     for i in DICTIONARY.keys():
@@ -1112,7 +1130,7 @@ def generateO():
             lineO_list2.append(linesO)
             meshO_list2.append(meshesO)
             # meshplaneO.append(planeO)
-    
+    volumeoffice = areaOffices*input_param.heightperfloorO 
    
     return workingpeople, AreaperPlot, areaOffices
 
@@ -1658,7 +1676,7 @@ def E(arraypoints, colorm, colorp, colorl, floors, heightperfloor):
     return meshesI, linesI, plane1
 
 def generateTypeL (dict_sorted, offsetR, offsetH, heightperfloorR, heightperfloorB, heightperfloorH, population, density):
-    global maxpopulation, areaLiving
+    global maxpopulation, areaLiving, volumeLiving
     
     maxpopulation = calcmaxpeople(dict_sorted)
    
@@ -1671,6 +1689,7 @@ def generateTypeL (dict_sorted, offsetR, offsetH, heightperfloorR, heightperfloo
     colorl = THREE.Color.new("rgb(189,136,110)")
     colorp = THREE.Color.new("rgb(174,155,148)")
     
+    volumeLiving = 0
     meshes_listL = []
     lines_listL = []
     meshes_list = []
@@ -1687,39 +1706,48 @@ def generateTypeL (dict_sorted, offsetR, offsetH, heightperfloorR, heightperfloo
                 greenP = G(dict_sorted[i]['Plotobject'].get_outerboundary(), THREE.Color.new("rgb(138,158,134)"))
             
             if dict_sorted[i]['Plotobject']. get_area_type() == 1:
-                
                 meshes_list, lines_list, ground = R(dict_sorted[i]['Plotobject'].get_outerboundary(), 1, heightperfloorR)
+                volumeLiving += dict_sorted[i]['Plotobject'].calcCurrentAreaOfType()*heightperfloorR
             
             elif dict_sorted[i]['Plotobject']. get_area_type() == 2:
                 meshes_list, lines_list, ground = R(dict_sorted[i]['Plotobject'].get_outerboundary(), 2, heightperfloorR)
-            
+                volumeLiving += dict_sorted[i]['Plotobject'].calcCurrentAreaOfType()*heightperfloorR
+                
             elif dict_sorted[i]['Plotobject']. get_area_type() == 3:
                 meshes_list, lines_list, ground = B(dict_sorted[i]['Plotobject'].get_outerboundary(),colorm, colorl, colorp, 3, heightperfloorB)
+                volumeLiving += dict_sorted[i]['Plotobject'].calcCurrentAreaOfType()*heightperfloorB
                 
             elif dict_sorted[i]['Plotobject']. get_area_type() == 4:
                 meshes_list, lines_list, ground = B(dict_sorted[i]['Plotobject'].get_outerboundary(), colorm,colorl, colorp, 4, heightperfloorB)
+                volumeLiving += dict_sorted[i]['Plotobject'].calcCurrentAreaOfType()*heightperfloorB
             
             elif dict_sorted[i]['Plotobject']. get_area_type() == 5:
                 meshes_list, lines_list, ground = B(dict_sorted[i]['Plotobject'].get_outerboundary(), colorm, colorl, colorp,5, heightperfloorB)
+                volumeLiving += dict_sorted[i]['Plotobject'].calcCurrentAreaOfType()*heightperfloorB
             
             elif dict_sorted[i]['Plotobject']. get_area_type() == 6:
                 meshes_list, lines_list, ground = B(dict_sorted[i]['Plotobject'].get_outerboundary(), colorm,colorl, colorp, 6, heightperfloorB)
+                volumeLiving += dict_sorted[i]['Plotobject'].calcCurrentAreaOfType()*heightperfloorB
             
             elif dict_sorted[i]['Plotobject']. get_area_type() == 7:
                 meshes_list, lines_list, ground = H(dict_sorted[i]['Plotobject'].get_outerboundary(), 7, heightperfloorH)
+                volumeLiving += dict_sorted[i]['Plotobject'].calcCurrentAreaOfType()*heightperfloorH
             
             elif dict_sorted[i]['Plotobject']. get_area_type() == 8:
                 meshes_list, lines_list, ground = H(dict_sorted[i]['Plotobject'].get_outerboundary(),  8, heightperfloorH)
+                volumeLiving += dict_sorted[i]['Plotobject'].calcCurrentAreaOfType()*heightperfloorH
             
             elif dict_sorted[i]['Plotobject']. get_area_type() == 9:
                 meshes_list, lines_list, ground = H(dict_sorted[i]['Plotobject'].get_outerboundary(),  9, heightperfloorH)
+                volumeLiving += dict_sorted[i]['Plotobject'].calcCurrentAreaOfType()*heightperfloorH
             
             elif dict_sorted[i]['Plotobject']. get_area_type() == 10:
                 meshes_list, lines_list, ground = H(dict_sorted[i]['Plotobject'].get_outerboundary(), 10, heightperfloorH)
-            
+                volumeLiving += dict_sorted[i]['Plotobject'].calcCurrentAreaOfType()*heightperfloorH
             elif dict_sorted[i]['Plotobject']. get_area_type() == 11:
                 meshes_list, lines_list, ground = H(dict_sorted[i]['Plotobject'].get_outerboundary(), 11, heightperfloorH)
-
+                volumeLiving += dict_sorted[i]['Plotobject'].calcCurrentAreaOfType()*heightperfloorH
+            
             meshes_listL.append(meshes_list)
         
             lines_listL.append(lines_list)
