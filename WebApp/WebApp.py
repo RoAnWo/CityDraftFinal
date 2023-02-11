@@ -949,9 +949,8 @@ class plotInformation:
     def reset(self):
         self.currentArea = 0
     
-    def get_floors(self):
-        return self.floors
-    
+
+
     def get_current_areaPopul(self):
         return self.currentAreaPopul
     
@@ -1121,7 +1120,6 @@ def generateO():
             #loop_check_angle(PLOTS)
         
             Boundary = PlotsNumpy[i]
-            AreaperPlot=1
             linesO, meshesO, PeoplePerPlot, AreaperPlot = offsetAndGenerateShapeO(Boundary,THREE.Color.new("rgb(218,235,235)"), THREE.Color.new("rgb(161,173,173)"),  THREE.Color.new("rgb(161,173,173)"), input_param.heightperfloorO)
             
            
@@ -1130,7 +1128,7 @@ def generateO():
             lineO_list2.append(linesO)
             meshO_list2.append(meshesO)
             # meshplaneO.append(planeO)
-    volumeoffice = areaOffices*input_param.heightperfloorO 
+    volumeoffice = areaOffices*input_param.heightperfloorO
    
     return workingpeople, AreaperPlot, areaOffices
 
@@ -1143,7 +1141,6 @@ def generateG():
             Boundary = PlotsNumpy[i]
             
             G(Boundary, THREE.Color.new("rgb(138,158,134)") )
-            
             areagreenplot = Area(Boundary)
             areaGreenAll += areagreenplot
     
@@ -1264,7 +1261,7 @@ def updateL ():
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # CALCULATE FUNCTIONS
-def Area(corners):
+def Area(corners):#DONT TOUCH
 
     n = len(corners) # of corners
     area = 0
@@ -1277,12 +1274,12 @@ def Area(corners):
 
     return area
 
-def calc_plotArea(arraypoints):
+def calc_plotArea(arraypoints):#DONT TOUCH
     
     areaOuterBoundary = Area(arraypoints)
     return areaOuterBoundary
 
-def calcmaxpeople(dict_sorted):
+def calcmaxpeople(dict_sorted):#DONT TOUCH
     
     choose_type = 0
     
@@ -1314,7 +1311,7 @@ def calcmaxpeople(dict_sorted):
         
     return   population_possible_max
 
-def calculatetype(dict_sorted, density ,population, maxpopul):
+def calculatetype(dict_sorted, density ,population, maxpopul):#DONT TOUCH
     
     choose_type = 0
     
@@ -1337,17 +1334,15 @@ def calculatetype(dict_sorted, density ,population, maxpopul):
             area_all = area_all - currentArea
             area_all = area_all + builtarea_per_plot
             population_possible = area_all//30
-            #print("i",i, "area_all",area_all,"current_Area",currentArea, "population_possible", population_possible)
-            
             if population_possible >= maxpopul*input_param.population:
                 #print("choose_type return 1", choose_type)
                 return area_all
         
         choose_type += 1
-        #print("choose_type return 2", choose_type)   
+
     return area_all      
 
-def calcB (arraypoints):
+def calcB (arraypoints):#PUT YOUR HANDS HERE calculates Living with Hole  (Blockrandbebauung)
 
     Xcoordinatesb, Ycoordinatesb = generatexy (arraypoints)
     offsetpolyB = offsetNpPoly(arraypoints, 4)
@@ -1368,7 +1363,7 @@ def calcB (arraypoints):
     points_check2 = convert_into_Points(OffsetX, OffsetY)
     
     if determine_loop_direction(points_check2) == "Counterclockwise":
-       # print( "changed value outer")
+       
         offsetvalueouter = 0
 
         
@@ -1380,24 +1375,19 @@ def calcB (arraypoints):
     boundarylengths = lengthBoundary(OffsetX, OffsetY)
 
     
-    # if min(boundarylengths)<= 15:
-        
-    #     return(areaOuterBoundary, newOuterboundary,0)
     
     
     offsetvalue = 2.5
     while min(boundarylengths) > 15 or offsetvalue <=4 :###########################CHANGES ROBERT
         
         Oldoffset = offsetvalue
-        #print("Oldoffset", Oldoffset)
+        
 
         offsetvalue += 0.5
         
         offsetPolyBBB = offsetNpPoly(newOuterboundary, offsetvalue)
         Offset2X, Offset2Y = generatexy(offsetPolyBBB)
         boundarylengths = lengthBoundary(Offset2X, Offset2Y)
-        #print("boundarylengths", min(boundarylengths))
-        #print (Offset2X)
         Points_2_check = convert_into_Points(Offset2X, Offset2Y)
     
         if min(Offset2X) == min(OffsetX) or determine_loop_direction(Points_2_check) == "Counterclockwise":
@@ -1418,9 +1408,7 @@ def calcB (arraypoints):
     final_area = areaOuterBoundary
     return (final_area, newOuterboundary,offsetvalue)
 
-#   
-
-def calcH(arraypoints, minlengthbl):
+def calcH(arraypoints, minlengthbl):#PUT YOUR HANDS HERE calculates Living without Hole
     
     
     outerboundArray = []
@@ -1456,16 +1444,16 @@ def calcH(arraypoints, minlengthbl):
             #check distance of intersectes points and offsets plot if possible
             boundarylengths = lengthBoundary(Xcoordinatesb, Ycoordinatesb)
 
-            while min(boundarylengths) > minlengthbl :  
+            while min(boundarylengths) > minlengthbl:  
                 
                 Oldoffset = offsetvalue
                     
                 offsetvalue += 1
-                # print("i", i)
+                
                 offsetpoly = offsetNpPoly(i,offsetvalue)
                 OffsetX, OffsetY = generatexy(offsetpoly)
                 boundarylengths = lengthBoundary(OffsetX, OffsetY)
-                #print("boundarylengths", min(boundarylengths))
+               
                 
                 Points_2_check = convert_into_Points(OffsetX, OffsetY)
                 
@@ -1474,7 +1462,7 @@ def calcH(arraypoints, minlengthbl):
                     oldoffsetpoly = offsetNpPoly(i, Oldoffset)
                     
                     areaPlotvalidR = Area(oldoffsetpoly)
-                    #print("Oldoffset", Oldoffset)
+                    
                     offsetvalue = Oldoffset
                     break 
             
@@ -1490,17 +1478,18 @@ def calcH(arraypoints, minlengthbl):
         for area in areaPlotfinal:
             areaR += area
         
-        #print("areaR", areaR)
+       
         return areaR, dividedPoly, OffsetListdividedPoly
     
-def calc(arraypoints, minboundarylength):
+def calc(arraypoints, minboundarylength):#PUT YOUR HANDS HERE calcutes for Industrial and Offices
     
     offsetvalue = 0
     Xcoordinatesb, Ycoordinatesb = generatexy (arraypoints)
     #check distance of intersectes points and offsets plot if possible
     boundarylengths = lengthBoundary(Xcoordinatesb, Ycoordinatesb)
     
-    while offsetvalue < 5:  
+    while offsetvalue < 10 or min(boundarylengths) >=4: 
+        print("boundarylengths",min(boundarylengths))
         
         Oldoffset = offsetvalue
         
@@ -1510,7 +1499,7 @@ def calc(arraypoints, minboundarylength):
         offsetpolyC = offsetNpPoly(arraypoints,offsetvalue)
         OffsetX, OffsetY= generatexy(offsetpolyC)
         boundarylengths = lengthBoundary(OffsetX, OffsetY)
-        #print("boundarylengths", min(boundarylengths))
+
         
         Points_2_check = convert_into_Points(OffsetX, OffsetY)
         
@@ -1524,7 +1513,7 @@ def calc(arraypoints, minboundarylength):
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # PROZESS AND CALLDRAWFUNTION
-def G(arraypoints, colorp):
+def G(arraypoints, colorp):#Generate Meshes on the Ground
     
     newboundary = offsetallplots5(arraypoints)
     #convert x and y lists 
@@ -1534,7 +1523,7 @@ def G(arraypoints, colorp):
     
     return pleneGGG
 
-def R(arraypoints, floors, heightperfloor):
+def R(arraypoints, floors, heightperfloor):#Build Residentials
 
     meshesRfinal = []
     linesRfinal = []
@@ -1560,9 +1549,12 @@ def R(arraypoints, floors, heightperfloor):
         
         for k in range(len(linesR)):
             linesRfinal.append(linesR[k])
+    
+  
+    SB=2
+    
 
-
-    offsetpoly = offsetallplots5(arraypoints)
+    offsetpoly = offsetallplots_Highrise(arraypoints,SB)
     Xcoordinates, Ycoordinates = generatexy(offsetpoly)
     xCoordB, yCoordB = makeFloatfromPoint( Xcoordinates, Ycoordinates)
     
@@ -1570,7 +1562,7 @@ def R(arraypoints, floors, heightperfloor):
     
     return meshesRfinal, linesRfinal, planeR
 
-def B(arraypoints, colorm, colorl, colorp, floors, heightperfloor):
+def B(arraypoints, colorm, colorl, colorp, floors, heightperfloor):#Build Blocks #### if Bug not in somewhere in calcB its prly here
 
    
     area, boundary, Offsetv  = calcB(arraypoints) 
@@ -1598,17 +1590,12 @@ def B(arraypoints, colorm, colorl, colorp, floors, heightperfloor):
 
     return meshes_listB, lines_listB, plane1
 
-def H(arraypoints, floors, heightperfloor):
+def H(arraypoints, floors, heightperfloor):#Build Highrise #hardcoded offset floor number
     
     meshesRfinal = []
     linesRfinal = []
     
     area, dividedboundary, dividedoffset = calcH(arraypoints, 10)
-    #print("dividedboundary", dividedboundary)
-    #print("dividedoffset", dividedoffset)
-    
-    
-   # print("len(dividedboundary)", len(dividedboundary))
     length = len(dividedboundary)
     
     for i in range(0, length):
@@ -1633,27 +1620,28 @@ def H(arraypoints, floors, heightperfloor):
         boundaryoffsett = convert_result_check_W(xCoordsf, yCoordsf)
         offsetValTop = calc(boundaryoffsett, 8)
         
-        offsetpollyHTop = offsetNpPoly(offsetpolyH,offsetValTop)
+        offsetpollyHTop = offsetNpPoly(offsetpolyH,2)
         
         Offset2X, Offset2Y = generatexy(offsetpollyHTop)
         xCoordAr2, yCoordAr2 = makeFloatfromPoint(Offset2X, Offset2Y)
 
-        meshesTop, linesTop = generateShapeTop(xCoordAr2, yCoordAr2,THREE.Color.new("rgb(204,185,178)"), THREE.Color.new("rgb(174,155,148)"),floors-4, heightperfloor)
+        meshesTop, linesTop = generateShapeTop(xCoordAr2, yCoordAr2,THREE.Color.new("rgb(204,185,178)"), THREE.Color.new("rgb(174,155,148)"),round((floors//4)), heightperfloor)
         for j in range(len(meshesTop)):
             meshesRfinal.append(meshesTop[j])
         
         for k in range(len(linesTop)):
             linesRfinal.append(linesTop[k])
-   
     
-    offsetpoly = offsetallplots5(arraypoints)
+    
+    SB=2
+    offsetpoly = offsetallplots_Highrise(arraypoints,SB)
     Xcoordinates, Ycoordinates = generatexy(offsetpoly)
     xCoordB, yCoordB = makeFloatfromPoint( Xcoordinates, Ycoordinates)
     planeH = plane(xCoordB,yCoordB,THREE.Color.new("rgb(174,155,148)"))
     
     return meshesRfinal, linesRfinal, planeH
 
-def E(arraypoints, colorm, colorp, colorl, floors, heightperfloor):
+def E(arraypoints, colorm, colorp, colorl, floors, heightperfloor):#build e
 
     newOuterboundary = offsetallplots5(arraypoints)
     
@@ -1675,7 +1663,7 @@ def E(arraypoints, colorm, colorp, colorl, floors, heightperfloor):
     
     return meshesI, linesI, plane1
 
-def generateTypeL (dict_sorted, offsetR, offsetH, heightperfloorR, heightperfloorB, heightperfloorH, population, density):
+def generateTypeL (dict_sorted, offsetR, offsetH, heightperfloorR, heightperfloorB, heightperfloorH, population, density):##dont TouchChooses which type will be built
     global maxpopulation, areaLiving, volumeLiving
     
     maxpopulation = calcmaxpeople(dict_sorted)
@@ -1757,13 +1745,13 @@ def generateTypeL (dict_sorted, offsetR, offsetH, heightperfloorR, heightperfloo
             
     return meshes_listL, lines_listL, groundes, green
 
-def offsetAndGenerateShapeO(arraypoints, colorm, colorl, colorp , heightperfloor):
+def offsetAndGenerateShapeO(arraypoints, colorm, colorl, colorp , heightperfloor):#Prly everything Fine, DONT TOUCH if ur not 100% its this funtion thats bugging
     global scene 
         
     newOuterboundary = offsetallplots5(arraypoints)
     Xcoordinates, Ycoordinates = generatexy(newOuterboundary)
     xCoordB, yCoordB = makeFloatfromPoint( Xcoordinates, Ycoordinates)
-    #print("newOuterboundary", newOuterboundary)
+    
     offsetvalue = calc(newOuterboundary, 15)
     
     floor = (offsetvalue*2)/heightperfloor
@@ -1776,8 +1764,15 @@ def offsetAndGenerateShapeO(arraypoints, colorm, colorl, colorp , heightperfloor
     peoploperplot = (arePerPlot*floors)//10
     
     peoploperplot = input_param.workplaces * peoploperplot
-    floor = (peoploperplot * 10 )//arePerPlot 
-    floors = round(floor) 
+    floor = (peoploperplot * 10 )//arePerPlot
+    if floor != None:
+        floors = round(floor)
+        if floors == 0:
+            peoploperplot = 0
+    else: 
+        floors == 0
+        peoploperplot = 0
+
 
 
     OffsetX, OffsetY = generatexy(offsetpolyg)
@@ -1789,16 +1784,16 @@ def offsetAndGenerateShapeO(arraypoints, colorm, colorl, colorp , heightperfloor
     
     return meshesI, linesI, peoploperplot, arePerPlot
     
-def offsetAndGenerateShapeI(arraypoints, offsetvalue, colorm, colorl, colorp , floors, heightperfloor):
+def offsetAndGenerateShapeI(arraypoints, offsetvalue, colorm, colorl, colorp , floors, heightperfloor): #prly no mistakes here
    
     newOuterboundary = offsetallplots5(arraypoints)
-
     Xcoordinates, Ycoordinates = generatexy(newOuterboundary)
     xCoordB, yCoordB = makeFloatfromPoint( Xcoordinates, Ycoordinates)
     plane1 = plane(xCoordB, yCoordB,colorp)
     
    
-    dividedPoly = polygonDivider(newOuterboundary,50, 25000, 1, True,newOuterboundary)
+    
+    dividedPoly = polygonDivider(newOuterboundary,50, 25000, 1, True,newOuterboundary, False,False,False,0.2,[],78)
    
       
     if dividedPoly == None:
@@ -1807,8 +1802,7 @@ def offsetAndGenerateShapeI(arraypoints, offsetvalue, colorm, colorl, colorp , f
     
     
     areadividedplots = []
-    for i in dividedPoly: 
-        print("dividedPoly",dividedPoly)
+    for i in dividedPoly:
         area_per_plot =  Area(i)
         areadividedplots.append(area_per_plot)
 
@@ -1850,7 +1844,7 @@ def offsetAndGenerateShapeI(arraypoints, offsetvalue, colorm, colorl, colorp , f
         return meshesI, linesI, plane1, arePerPlot
         
 
-def offsetallplots5(arraypoints):
+def offsetallplots5(arraypoints):#Offset all Boundarys to generate sub streets
 
     
     offsetpoints = offsetNpPoly(arraypoints, 4)
@@ -1860,7 +1854,16 @@ def offsetallplots5(arraypoints):
         return arraypoints
     
     return offsetpoints
+def offsetallplots_Highrise(arraypoints,setbackdistance):#Offset all Boundarys to generate sub streets
 
+    
+    offsetpoints = offsetNpPoly(arraypoints, setbackdistance)
+
+    if determine_loop_direction(offsetpoints) == "Counterclockwise":
+    
+        return arraypoints
+    
+    return offsetpoints
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # DRAW FUNKTIONS THREEJS 
@@ -1910,19 +1913,10 @@ def plane(xCordsArray,yCordsArray,color):
     return meshgreen
 
  
-    planeMaterial = THREE.ShadowMaterial.new(color)
-    planeMaterial.color = color
-    
-    plane = THREE.Mesh.new( planeGeometry, planeMaterial )
-    
-    plane.translateZ(-2)
-    plane.transparent = True 
-    plane.opacity = 0
-    plane.receiveShadow = True
 #generate shapes to extrude and cap 
 
 global generateShape
-def generateShape(xCordsArray,yCordsArray, color, colorl, floors, heightperfloor,):
+def generateShape(xCordsArray,yCordsArray, color, colorl, floors, heightperfloor,):#all geometries except Blockrand
     
     global scene
    
@@ -1967,7 +1961,7 @@ def generateShape(xCordsArray,yCordsArray, color, colorl, floors, heightperfloor
         
     return mesh_list1, line_list1  
 
-def generateShapeTop(xCordsArray,yCordsArray, color, colorl, floors, heightperfloor):
+def generateShapeTop(xCordsArray,yCordsArray, color, colorl, floors, heightperfloor):#setback on highrises
 
 
     extrudeSettings = {"steps" : 20,"depth" : 3.5,"bevelEnabled": False, "bevelSize": 0 }
@@ -1989,8 +1983,6 @@ def generateShapeTop(xCordsArray,yCordsArray, color, colorl, floors, heightperfl
         geometry = THREE.ExtrudeGeometry.new(shape_Green,extrudeSettings)
         geometry.translate(0, 0, extrudeSettings.depth*(k+4))
         mesh_material = THREE.MeshPhongMaterial.new(color)
-        # mesh_material.transparent = True
-        # mesh_material.opacity = 0.8
         mesh_material.color = color
         mesh = THREE.Mesh.new(geometry, mesh_material)
         mesh.castShadow = True
@@ -2009,7 +2001,7 @@ def generateShapeTop(xCordsArray,yCordsArray, color, colorl, floors, heightperfl
     
     return meshesTop,linesTop
 
-def generateShapeblock(xCordsArray,yCordsArray, color, colorl, xCordsHoles, yCordsHoles, array, floors, heightperfloor):
+def generateShapeblock(xCordsArray,yCordsArray, color, colorl, xCordsHoles, yCordsHoles, array, floors, heightperfloor):##blockrandgeometry
 
     global scene
     
@@ -2042,8 +2034,6 @@ def generateShapeblock(xCordsArray,yCordsArray, color, colorl, xCordsHoles, yCor
         geometry = THREE.ExtrudeGeometry.new(shape_permit,extrudeSettings)
         geometry.translate(0, 0, extrudeSettings.depth*k)
         mesh_material = THREE.MeshPhongMaterial.new(color)
-        # mesh_material.transparent = True
-        # mesh_material.opacity = 0.8
         mesh_material.color = color
         mesh = THREE.Mesh.new(geometry, mesh_material)
         meshesB.append(mesh)
@@ -2096,7 +2086,7 @@ def generateShapeblock(xCordsArray,yCordsArray, color, colorl, xCordsHoles, yCor
 
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-#HELPER FUNCTIONS 
+#HELPER FUNCTIONS #Dont Touch, only if 100% sure mistake stems from here
 def generateLinesNum(listpoints):
         listLines = []
         
@@ -2197,98 +2187,6 @@ def normalizeVec(x,y):
 
     distance = np.sqrt(x*x+y*y)
     return x/distance, y/distance
-
-def makeOffsetPoly(oldX, oldY, offset, outer_ccw = 1):
-    
-    num_points = len(oldX)
-    global newX,newY
-
-    newX = []
-    newY = []
-
-    for indexpoint in range(num_points):
-        prev = (indexpoint + num_points -1 ) % num_points
-        next = (indexpoint + 1) % num_points
-        vnX =  oldX[next] - oldX[indexpoint]
-        vnY =  oldY[next] - oldY[indexpoint]
-        vnnX, vnnY = normalizeVec(vnX,vnY)
-        nnnX = vnnY
-        nnnY = -vnnX
-        vpX =  oldX[indexpoint] - oldX[prev]
-        vpY =  oldY[indexpoint] - oldY[prev]
-        vpnX, vpnY = normalizeVec(vpX,vpY)
-        npnX = vpnY * outer_ccw
-        npnY = -vpnX * outer_ccw
-        bisX = (nnnX + npnX) * outer_ccw
-        bisY = (nnnY + npnY) * outer_ccw
-        bisnX, bisnY = normalizeVec(bisX,  bisY)
-        bislen = offset /  np.sqrt((1 + nnnX*npnX + nnnY*npnY)/2)
-
-        newX.append(oldX[indexpoint] + bislen * bisnX)
-        newY.append(oldY[indexpoint] + bislen * bisnY)
-        
-    points_check = convert_into_Points(newX, newY)
-    determine_loop_direction(points_check)
-    
-    newOuterboundary = convert_result_check_W(newX, newY)
-   
-    if isSelfIntersect(newOuterboundary) == True:
-    
-        return oldX, oldY
-    
-    else:
-        return newX, newY
-
-def makeOffsetPolyOuter(oldX, oldY, offset, outer_ccw = 1):
-    
-    num_points = len(oldX)
-    global newX,newY
-
-    newX = []
-    newY = []
-
-    for indexpoint in range(num_points):
-        prev = (indexpoint + num_points -1 ) % num_points
-        next = (indexpoint + 1) % num_points
-        vnX =  oldX[next] - oldX[indexpoint]
-        vnY =  oldY[next] - oldY[indexpoint]
-        vnnX, vnnY = normalizeVec(vnX,vnY)
-        nnnX = vnnY
-        nnnY = -vnnX
-        vpX =  oldX[indexpoint] - oldX[prev]
-        vpY =  oldY[indexpoint] - oldY[prev]
-        vpnX, vpnY = normalizeVec(vpX,vpY)
-        npnX = vpnY * outer_ccw
-        npnY = -vpnX * outer_ccw
-        bisX = (nnnX + npnX) * outer_ccw
-        bisY = (nnnY + npnY) * outer_ccw
-        bisnX, bisnY = normalizeVec(bisX,  bisY)
-        bislen = offset /  np.sqrt((1 + nnnX*npnX + nnnY*npnY)/2)
-
-        newX.append(oldX[indexpoint] + bislen * bisnX)
-        newY.append(oldY[indexpoint] + bislen * bisnY)
-        
-    points_check = convert_into_Points(newX, newY)
-    determine_loop_direction(points_check)
-   
-    newOuterboundary = convert_result_check_W(newX, newY)
-   
-    if isSelfIntersect(newOuterboundary) == True:
-        # Remove the line that caused the self-intersection
-       
-        newX.pop()
-        newY.pop()
-        
-       
-        makeOffsetPolyOuter(newX, newY, offset, 1)
-       
-        #print ("newX1, newY1")
-        return newX, newY
-        
-    
-    else:
-        #print("newX1, newY1", "newX1, newY1")
-        return newX, newY
 
 def isIntersectingWithoutEndpoints(intersectLinesAsNPList):
     if (np.all(intersectLinesAsNPList[0][0] == intersectLinesAsNPList[1][0]) or np.all(intersectLinesAsNPList[0][0] == intersectLinesAsNPList[1][1]) or 
@@ -2414,14 +2312,14 @@ def loop_check_angle(arraypoints):
     
     
     for current_line in arraylines: 
-        #print(current_line[0])
+        
         
         startline = current_line[0]
-       # print("startline", startline)
+       
         next_line = current_line[1]
         
         angle = calculate_angle(startline, next_line)
-       # print ("angle" , math.degrees(angle))
+    
         
         if math.degrees(angle) > 90:
             arraylines.pop(current_line[0])  
@@ -2433,7 +2331,7 @@ def loop_check_angle(arraypoints):
 
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-#MOUS AND CLICKABILITY
+#MOUS AND CLICKABILITY 
 def transform_drag(event):
     event.preventDefault()
 
@@ -2722,9 +2620,9 @@ def on_dbl_click(event):
         curve_material.color = THREE.Color.new("rgb(100,100,100)")
        
         console.log("Boundary_COORDS", Boundary_Coords_py)
-       # print("Boundary_COORDS", Boundary_Coords_py)
+      
         console.log("Road_COORDS", Input_Road_Coords_py)
-      #  print("Road_COORDS", Input_Road_Coords_py)
+      
     scene.remove(curve_object)
     scene.remove(curve_object_road)
     update_Boundary()
@@ -3047,15 +2945,6 @@ def random_distribution(dictionary: dict) -> dict:
         
     
 
-    
-    # plots_sorted = []
-    # for plot in dictionary.keys():
-    #     remaining_values = 5 - len(values)
-    #     plots_sorted.append((plot, remaining_values))
-    # plots_sorted.sort(key=lambda x: x[1])
-    #print("PLOTS_SORTED_WEIRD",sorted_dict)
-    
-
     # Loop through the plots
     while combined_plots != {}:
         for plot in sorted_dict:
@@ -3214,12 +3103,7 @@ def random_distribution(dictionary: dict) -> dict:
     # print("ICount",I_Count)  
     # print("GCount",G_Count)  
     # print("OCount",O_Count)  
-    # print("ECount",E_Count)  
-    # print(C_Count)     
-    # print(R_Count) 
-    # print(I_Count) 
-    # print(P_Count)
-    #print("visited",visited)
+    # print("ECount",E_Count)
     return dictionary
 ##########################################################################################
 def find_solution(dictionary: dict,
@@ -3236,7 +3120,6 @@ def find_solution(dictionary: dict,
 
         # Get a potential solution
         answer = random_distribution(dictionary)
-        print(answer)
 
     if answer == False:
         find_solution(dictionary,5)
@@ -3292,7 +3175,7 @@ def polygonDivider(inputPolygonsAsNp,minSize = 0, maxSize = 250000, H_or_V = 1, 
     
     for i in range(len(currentPoly)):   #   For every "open" polygon that still needs processing
         
-        #print("INPUTINSPLIT", currentPoly[i],cutDir,percentageOfCut)
+        
         splitPoly = polygonSplit(currentPoly[i],cutDir,percentageOfCut)
         newLeftPolys = splitPoly[0]
         newRightPolys = splitPoly[1]
@@ -3515,7 +3398,7 @@ def polygonDivider(inputPolygonsAsNp,minSize = 0, maxSize = 250000, H_or_V = 1, 
                             return polygonDivider(currentPoly, minSize, maxSize, H_or_V, mustHaveStreetConnection ,streetToConnectToAsNPVertices , randomizeH_V , force_H , force_V ,min_compactness , currentFinishedPolys,percentageOfCut, count , turnCount)
                     except:
                         pass
-                        #print("exception")
+                        
 
 
         count += 1
@@ -3605,7 +3488,7 @@ def offsetNpPoly(points, offset, outer_ccw = 1):
                 intersectPt = getIntersectPoint([line1,line2])
                 if type(intersectPt) is not np.ndarray:   
                     return newPoints
-                newPoints.pop((i+1) % lennewPoints)
+                newPoints.pop((i+2) % lennewPoints)
                 lennewPoints = len(newPoints)
                 newPoints.pop((i+1) % lennewPoints)
                 lennewPoints = len(newPoints)
