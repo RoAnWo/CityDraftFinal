@@ -1488,8 +1488,8 @@ def calc(arraypoints, minboundarylength):#PUT YOUR HANDS HERE calcutes for Indus
     #check distance of intersectes points and offsets plot if possible
     boundarylengths = lengthBoundary(Xcoordinatesb, Ycoordinatesb)
     
-    while offsetvalue < 10 or min(boundarylengths) >=4: 
-        print("boundarylengths",min(boundarylengths))
+    while offsetvalue < 4 or min(boundarylengths) >=6: 
+        #print("boundarylengths",min(boundarylengths))
         
         Oldoffset = offsetvalue
         
