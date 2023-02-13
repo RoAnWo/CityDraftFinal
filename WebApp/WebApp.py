@@ -3,7 +3,7 @@ from js import THREE, window, document, Object, console, Math
 import js
 # Import pyscript / pyodide modules
 from pyodide.ffi import create_proxy, to_js #type:ignore
-
+from shapely.geometry.polygon import LinearRing
 #Import python module
 import math
 #import shapely
@@ -1481,14 +1481,14 @@ def calcH(arraypoints, minlengthbl):#PUT YOUR HANDS HERE calculates Living witho
        
         return areaR, dividedPoly, OffsetListdividedPoly
     
-def calc(arraypoints, minboundarylength):#PUT YOUR HANDS HERE calcutes for Industrial and Offices
+def calc(arraypoints, minboundarylength):#PUT YOUR HANDS HERE calcutes for Industrial and Offices###min BOUNDARY TURNED OFF
     
     offsetvalue = 0
     Xcoordinatesb, Ycoordinatesb = generatexy (arraypoints)
     #check distance of intersectes points and offsets plot if possible
     boundarylengths = lengthBoundary(Xcoordinatesb, Ycoordinatesb)
     
-    while offsetvalue < 4 or min(boundarylengths) >=6: 
+    while offsetvalue < 8 : #################### MIN BUNDARY
         #print("boundarylengths",min(boundarylengths))
         
         Oldoffset = offsetvalue
@@ -1757,7 +1757,7 @@ def offsetAndGenerateShapeO(arraypoints, colorm, colorl, colorp , heightperfloor
     floor = (offsetvalue*2)/heightperfloor
     floors = round(floor) 
    
-    offsetpolyg = offsetNpPoly(newOuterboundary, offsetvalue)
+    offsetpolyg = Offset_Shapely(newOuterboundary, offsetvalue,-1)
     
     arePerPlot = Area(offsetpolyg)
     
@@ -3439,6 +3439,19 @@ def minimalBoundingBox(pointsOfPolyAsNP): #Find the minimum bounding box for an 
         min_bounding_boxAsNP.append(np.array([i[0],i[1]]))
     return min_bounding_boxAsNP
 
+
+def Offset_Shapely(points,offset,ccw):
+    
+    if ccw == -1:
+        side_var="right"
+    else: side_var="left"
+    poly_line = LinearRing(points)
+    poly_line_offset = poly_line.parallel_offset(offset, side=side_var, resolution=16, join_style=2, mitre_limit=1)
+    poly_line_offset_np = np.array([np.array([c[0], c[1]]) for c in poly_line_offset.coords])
+    poly_line_offset_np = [np.array(i) for i in poly_line_offset_np]
+  
+    return poly_line_offset_np
+
 def offsetNpPoly(points, offset, outer_ccw = 1):
     oldX = []
     oldY = []
@@ -3502,7 +3515,6 @@ def offsetNpPoly(points, offset, outer_ccw = 1):
     if len(oldNewPoints)>= 4:
         newPoints = crossingLineKicker(oldNewPoints,len(oldNewPoints))         
     return newPoints
-
 
 
 def arrangePolygonPieces(listOfPiecesAsNP, counter = 0):
